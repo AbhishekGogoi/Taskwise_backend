@@ -13,5 +13,5 @@ const PORT =8080;
 app.listen(PORT, () => { console.log('Server is running on port 8080') });
 
 
-// Connect to MongoDB
+//  Connect to MongoDB
 connectDB();
