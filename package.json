@@ -1,0 +1,23 @@
+{
+  "name": "taskwise_backend",
+  "version": "1.0.0",
+  "description": "Backend API for Taskwise, a comprehensive task management application. Handles user authentication, task CRUD operations, reminders, and collaboration features.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start":"nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbhishekGogoi/Taskwise_backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AbhishekGogoi/Taskwise_backend/issues"
+  },
+  "homepage": "https://github.com/AbhishekGogoi/Taskwise_backend#readme",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
