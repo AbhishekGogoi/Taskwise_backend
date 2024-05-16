@@ -1,4 +1,5 @@
 const express=require("express");
+const connectDB = require('./config/db.config');
 
 
 const app=express();
@@ -10,3 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const PORT =8080;
 app.listen(PORT, () => { console.log('Server is running on port 8080') });
+
+
+// Connect to MongoDB
+connectDB();
