@@ -9,12 +9,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const PORT = 8080;
+
+// Start the server
 app.listen(PORT, () => {
   console.log("Server is running on port 8080");
 });
+
+// Connect to MongoDB
+connectDB();
+
+// Define routes
 app.get("/", (req, res) => {
-  return res.status(204).send("Welcome to BookStore Application");
+  return res.status(204).send("Welcome to TaskWise");
 });
 
-//  Connect to MongoDB
-connectDB();
+// Route to print "Welcome to TaskWise" message on API call
+app.get("/welcome", (req, res) => {
+  return res.send("Welcome to TaskWise!");
+});
