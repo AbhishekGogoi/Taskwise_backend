@@ -1,29 +1,26 @@
-const express = require("express");
-const connectDB = require("./config/db.config");
+const express=require("express");
 
-const app = express();
+
+const app=express();
 // parse requests of content-type - application/json
 app.use(express.json());
 
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
 
-const PORT = 8080;
+const db=require("./models");
+db.mongoose
+    .connect(db.url, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("MongoDB Connected"))
+    .catch((err) => {
+        console.log(err);
+        process.exit()
+    });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log("Server is running on port 8080");
-});
-
-// Connect to MongoDB
-connectDB();
-
-// Define routes
-app.get("/", (req, res) => {
-  return res.status(204).send("Welcome to TaskWise");
-});
-
-// Route to print "Welcome to TaskWise" message on API call
-app.get("/welcome", (req, res) => {
-  return res.send("Welcome to TaskWise!");
-});
+    app.get("/", (req, res) => {
+        return res.status(204).send("Welcome to Taskwise Application")
+    })
+    
+    require("./routes/projects.routes")(app);
+    const PORT =8080;
+    app.listen(PORT, () => { console.log('Server is running on port 8080') });
