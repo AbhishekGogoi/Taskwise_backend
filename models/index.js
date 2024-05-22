@@ -4,6 +4,8 @@ const mongoose=require("mongoose");
 const db={};
 db.mongoose=mongoose;
 db.url=dbConfig.url;
-db.projects=require("./projects.model")(mongoose);
+
+db.project=require("./project.model")(mongoose);
+db.workspace=require("./workspace.model")(mongoose);
 
 module.exports=db;
