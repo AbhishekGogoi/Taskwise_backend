@@ -1,6 +1,7 @@
 @ -0,0 +1,75 @@
 # dependencies
-/node_modules
+node_modules/
+
 /.pnp
 .pnp.js
 
