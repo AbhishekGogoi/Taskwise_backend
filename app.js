@@ -1,6 +1,15 @@
 const express = require("express");
+const cors = require("cors");
+const cookieSession = require("cookie-session");
+
 const app = express();
 const db = require("./models");
+
+var corsOptions = {
+  origin: "http://localhost:8080",
+};
+
+app.use(cors(corsOptions));
 
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
@@ -31,7 +40,8 @@ const swaggerOptions = {
     info: {
       title: "TaskWise API",
       version: "1.0.0",
-      description: "TaskWise is a task management API that allows users to manage workspaces, projects, tasks efficiently.",
+      description:
+        "TaskWise is a task management API that allows users to manage workspaces, projects, tasks efficiently.",
     },
     servers: [
       {
