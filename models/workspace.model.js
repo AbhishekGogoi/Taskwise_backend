@@ -1,10 +1,10 @@
-// workspace.js
 const mongoose = require("mongoose");
 
 module.exports = mongoose => {
     const workspaceSchema = new mongoose.Schema({
         name: { type: String, required: true, unique: true },
         description: { type: String },
+        imgUrl: { type: String, required: true },
         projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
         // creatorUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         isActive: { type: Boolean, default: true },
