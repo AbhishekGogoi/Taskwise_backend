@@ -29,6 +29,7 @@ db.mongoose
 // Import routes
 require("./routes/project.routes")(app);
 require("./routes/workspace.routes")(app);
+require("./routes/auth.routes")(app);
 
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
