@@ -2,6 +2,7 @@ const db = require("../models");
 const Project = db.project;
 const Workspace = db.workspace;
 const Column=db.Column;
+const mongoose=require("mongoose")
 /**
  * @swagger
  * /api/projects:
@@ -221,6 +222,45 @@ exports.deleteColumn = async (req, res) => {
         await project.save();
 
         res.status(200).json({ message: "Column deleted successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+//update column
+exports.updateColumnOrder = async (req, res) => {
+    console.log("entered")
+    try {
+        const projectId = req.params.projectId;
+        const { order } = req.body;
+
+        // Validate order array
+        if (!Array.isArray(order) || order.some(id => !mongoose.Types.ObjectId.isValid(id))) {
+            return res.status(400).json({ message: "Order must be an array of valid column IDs" });
+        }
+
+        // Find the project by ID
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        // Check if all provided column IDs exist in the project
+        const allColumnsExist = order.every(id => 
+            project.columns.some(column => column._id.equals(id))
+        );
+        if (!allColumnsExist) {
+            return res.status(404).json({ message: "One or more columns not found" });
+        }
+
+        // Update the order of columns
+        project.order = order;
+
+        // Save the updated project
+        const savedProject = await project.save();
+
+        res.status(200).json({ message: "Column order updated successfully", project: savedProject });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal Server Error" });

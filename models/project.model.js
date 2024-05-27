@@ -22,7 +22,7 @@ module.exports = mongoose => {
             ref: 'Workspace',
             required: true
         },
-        order: [{ type: String }],
+        order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Column' }],
         columns: [{ type: columnSchema}],
         tasks: [{ type: taskSchema }],
         // createdBy: {

@@ -24,5 +24,8 @@ module.exports = (app) => {
     // Route to delete a column from a project
     router.delete('/projects/:projectId/columns/:columnId', project.deleteColumn);
 
+    //Route to change column order
+    router.put('/projects/:projectId/order',project.updateColumnOrder)
+
     app.use("/api", router);
 };
