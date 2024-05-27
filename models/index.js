@@ -1,11 +1,12 @@
-const dbConfig=require("../config/db.config");
-const mongoose=require("mongoose");
+const dbConfig = require("../config/db.config");
+const mongoose = require("mongoose");
 
-const db={};
-db.mongoose=mongoose;
-db.url=dbConfig.url;
+const db = {};
+db.mongoose = mongoose;
+db.url = dbConfig.url;
 
-db.project=require("./project.model")(mongoose);
-db.workspace=require("./workspace.model")(mongoose);
+db.project = require("./project.model")(mongoose);
+db.workspace = require("./workspace.model")(mongoose);
+db.user = require("./user.model")(mongoose);
 
-module.exports=db;
+module.exports = db;
