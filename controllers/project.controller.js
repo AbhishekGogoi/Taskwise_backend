@@ -84,6 +84,27 @@ exports.create = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/projects/{id}:
+ *   get:
+ *     summary: Get project by ID
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The project ID
+ *     responses:
+ *       200:
+ *         description: The project data
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
 exports.getProjectById = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
@@ -95,6 +116,64 @@ exports.getProjectById = async (req, res) => {
         res.status(500).send(error);
     }
 }
+
+/**
+ * @swagger
+ * /api/projects/{id}:
+ *   put:
+ *     summary: Update project by ID
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The project ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               order:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               columns:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     title:
+ *                       type: string
+ *                     taskIds:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *               tasks:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     taskName:
+ *                       type: string
+ *                     content:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: Project updated successfully
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
+
 exports.updateProjectById = async (req, res) => {
     try {
         const { name, description, order, columns, tasks } = req.body;
@@ -110,6 +189,29 @@ exports.updateProjectById = async (req, res) => {
         res.status(500).send(error)
     }
 }
+
+/**
+ * @swagger
+ * /api/projects/{id}:
+ *   delete:
+ *     summary: Delete project by ID
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The project ID
+ *     responses:
+ *       200:
+ *         description: Project deleted successfully
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
+
 exports.deleteProjectById = async (req, res) => {
     try {
         const project = await Project.findByIdAndDelete(req.params.id);
@@ -121,6 +223,37 @@ exports.deleteProjectById = async (req, res) => {
         res.status(500).send(error);
     }
 };
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/columns:
+ *   post:
+ *     summary: Add a new column to a project
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The project ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Column added successfully
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
 
 // Add a new column to a project
 exports.addColumnToProject = async (req, res) => {
@@ -160,6 +293,8 @@ exports.addColumnToProject = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+
 
 exports.updateColumn = async (req, res) => {
     try {
@@ -310,3 +445,118 @@ exports.addTaskToProject = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+exports.updateTaskInProject = async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        const taskId = req.params.taskId;
+        const { taskName, content } = req.body;
+
+        // Find the project by ID
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        
+
+        // Find the task within the project's tasks array
+        const task = project.tasks.id(taskId);
+        if (!task) {
+            return res.status(404).json({ message: "Task not found in the project" });
+        }
+
+        // Update the task with the new data
+        if (taskName) task.taskName = taskName;
+        if (content) task.content = content;
+
+        // Save the project with the updated task
+        await project.save();
+
+        res.status(200).json(project);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+exports.deleteTaskInProject = async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        const taskId = req.params.taskId;
+
+        // Find the project by ID
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        // Find the task within the project's tasks array
+        const taskIndex = project.tasks.findIndex(task => task._id.equals(taskId));
+        if (taskIndex === -1) {
+            return res.status(404).json({ message: "Task not found in the project" });
+        }
+
+        // Remove the task from the tasks array
+        project.tasks.splice(taskIndex, 1);
+
+        // Find and remove the taskId from all columns
+        project.columns.forEach(column => {
+            const taskIdIndex = column.taskIds.indexOf(taskId);
+            if (taskIdIndex !== -1) {
+                column.taskIds.splice(taskIdIndex, 1);
+            }
+        });
+
+        // Save the project with the updated tasks array
+        await project.save();
+
+        res.status(200).json(project);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+exports.moveTaskToAnotherColumn = async (req, res) => {
+    try {
+        const { projectId, taskId } = req.params;
+        const { sourceColumnId, destinationColumnId } = req.body;
+
+        // Find the project by ID
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        // Find the source and destination columns
+        const sourceColumn = project.columns.find(col => col._id.equals(sourceColumnId));
+        const destinationColumn = project.columns.find(col => col._id.equals(destinationColumnId));
+
+        if (!sourceColumn) {
+            return res.status(404).json({ message: "Source column not found in the project" });
+        }
+        if (!destinationColumn) {
+            return res.status(404).json({ message: "Destination column not found in the project" });
+        }
+
+        // Remove the task ID from the source column
+        const taskIndex = sourceColumn.taskIds.indexOf(taskId);
+        if (taskIndex === -1) {
+            return res.status(404).json({ message: "Task not found in the source column" });
+        }
+        sourceColumn.taskIds.splice(taskIndex, 1);
+
+        // Add the task ID to the destination column
+        destinationColumn.taskIds.push(taskId);
+
+        // Save the updated project
+        await project.save();
+
+        res.status(200).json({ message: "Task moved successfully", project });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
