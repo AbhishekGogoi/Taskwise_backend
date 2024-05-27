@@ -6,5 +6,23 @@ module.exports = (app) => {
     // Create a new Project
     router.post("/projects", project.create);
 
+    //Get a project by id
+    router.get("/projects/:id", project.getProjectById);
+
+    // Update a project by ID
+    router.put('/projects/:id', project.updateProjectById);
+
+    // Delete a project by ID
+    router.delete('/projects/:id', project.deleteProjectById);
+
+   // Route to add a new column to a project
+    router.put('/projects/:projectId/columns', project.addColumnToProject);
+
+    // Route to update a column in a project
+    router.put('/projects/:projectId/columns/:columnId', project.updateColumn);
+
+    // Route to delete a column from a project
+    router.delete('/projects/:projectId/columns/:columnId', project.deleteColumn);
+
     app.use("/api", router);
 };
