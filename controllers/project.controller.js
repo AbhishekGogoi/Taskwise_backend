@@ -266,3 +266,47 @@ exports.updateColumnOrder = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+exports.addTaskToProject = async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        const { taskName, content, columnId } = req.body;
+
+        // Find the project by ID
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        // Find the column by ID within the project
+        const column = project.columns.id(columnId);
+        if (!column) {
+            return res.status(404).json({ message: "Column not found in the project" });
+        }
+
+        // Create a new task
+        const newTask = {
+            taskName: taskName,
+            content: content
+        };
+
+        // Add the new task to the project's tasks array
+        project.tasks.push(newTask);
+
+        // Save the project with the new task
+        const savedProject = await project.save();
+        
+        // Retrieve the new task ID
+        const newTaskId = savedProject.tasks[savedProject.tasks.length - 1]._id;
+
+        // Add the new task ID to the corresponding column's taskIds array
+        column.taskIds.push(newTaskId);
+
+        // Save the project again with the updated column
+        await savedProject.save();
+
+        res.status(201).json(savedProject);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};

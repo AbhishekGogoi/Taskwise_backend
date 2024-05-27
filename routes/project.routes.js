@@ -25,7 +25,10 @@ module.exports = (app) => {
     router.delete('/projects/:projectId/columns/:columnId', project.deleteColumn);
 
     //Route to change column order
-    router.put('/projects/:projectId/order',project.updateColumnOrder)
+    router.put('/projects/:projectId/order',project.updateColumnOrder);
+
+    // Route to add a new task to a project
+    router.post('/projects/:projectId/tasks', project.addTaskToProject);
 
     app.use("/api", router);
 };
