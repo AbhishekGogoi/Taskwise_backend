@@ -6,7 +6,13 @@ const userRegisterValidate = async (req, res, next) => {
   const schema = Joi.object({
     username: Joi.string().min(3).required(),
     email: Joi.string().email().required(),
-    password: Joi.string().min(4).alphanum().required(),
+    password: Joi.string()
+      .pattern(
+        new RegExp(
+          "^[a-zA-Z0-9!@#\\$%\\^&\\*\\(\\)_\\+\\-=[\\]{};:'\",<>\\.\\?/`~]{4,}$"
+        )
+      )
+      .required(),
   });
   const { error, value } = schema.validate(req.body);
   if (error) {
@@ -43,7 +49,13 @@ const userRegisterValidate = async (req, res, next) => {
 const userLoginValidate = (req, res, next) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
-    password: Joi.string().min(4).alphanum().required(),
+    password: Joi.string()
+      .pattern(
+        new RegExp(
+          "^[a-zA-Z0-9!@#\\$%\\^&\\*\\(\\)_\\+\\-=[\\]{};:'\",<>\\.\\?/`~]{4,}$"
+        )
+      )
+      .required(),
   });
   const { error, value } = schema.validate(req.body);
   if (error) {
