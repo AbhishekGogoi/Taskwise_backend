@@ -9,7 +9,7 @@ const mongoose=require("mongoose")
  *   post:
  *     summary: Create a new project
  *     tags:                          
- *       - Project   
+ *       - Projects   
  *     requestBody:
  *       required: true
  *       content:
