@@ -1,77 +1,65 @@
-const config = require("../config/auth.config");
 const db = require("../models");
-const User = db.user;
-
+const UserModel = db.user;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-// create a new user
-exports.signup = (req, res) => {
-  // Validate confirm password
-  if (req.body.password !== req.body.confirmPassword) {
-    return res.status(400).send({ message: "Passwords do not match!" });
-  }
-
-  // Create a new user
-  const newUser = new User({
-    username: req.body.username,
-    email: req.body.password,
-    password: bcrypt.hashSync(req.body.password, 8),
-  });
-
-  // Save User in the database
-  newUser.save((err, user) => {
-    if (err) {
-      res.status(500).send({ message: err });
-      return;
+module.exports = {
+  registerUser: async (req, res) => {
+    //1.validate req body-userRegisterValidate
+    //2.create userModel
+    const userModel = new UserModel(req.body);
+    //3.do password encryption
+    userModel.password = await bcrypt.hash(req.body.password, 10);
+    //4.save data to mongodb
+    try {
+      const response = await userModel.save();
+      response.password = undefined;
+      return res.status(201).json({ message: "sucessfull", data: response });
+    } catch (err) {
+      return res.status(500).json({ message: "error", err: err });
     }
-    res.send({ message: "User was registered successfully!" });
-  });
-};
-
-exports.signin = (req, res) => {
-  User.findOne({
-    username: req.body.username,
-  }).exec((err, user) => {
-    if (err) {
-      res.status(500).send({ message: err });
-      return;
+  },
+  loginUser: async (req, res) => {
+    //1.check user using email
+    //2.compare password
+    //3.create jwt token
+    //4.send response to client
+    try {
+      const user = await UserModel.findOne({ email: req.body.email });
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const isPassEqual = await bcrypt.compare(
+        req.body.password,
+        user.password
+      );
+      if (!isPassEqual) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const tokenObject = {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+      };
+      const jwtToken = jwt.sign(tokenObject, process.env.SECRET, {
+        expiresIn: "1h",
+      }); //1 hour
+      return res.status(200).json({ jwtToken });
+    } catch (err) {
+      return res.status(500).json({ message: "error", error: err });
     }
+  },
 
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
+  signOutUser: (req, res) => {
+    try {
+      res.clearCookie("token"); // Clear the JWT token cookie
+      return res.status(200).send({ message: "You've been signed out!" });
+    } catch (err) {
+      // Handle errors (e.g., by logging them or sending an error response)
+      console.error(err); // Log the error to the console
+      return res
+        .status(500)
+        .send({ message: "An error occurred during signout." });
     }
-
-    const passwordIsValid = bcrypt.compareSync(
-      req.body.password,
-      user.password
-    );
-
-    if (!passwordIsValid) {
-      return res.status(401).send({ message: "Invalid Password!" });
-    }
-
-    const token = jwt.sign({ id: user.id }, config.secret, {
-      algorithm: "HS256",
-      allowInsecureKeySizes: true,
-      expiresIn: 86400, // 24 hours
-    });
-
-    req.session.token = token;
-
-    res.status(200).send({
-      id: user._id,
-      username: user.username,
-      email: user.email,
-    });
-  });
-};
-
-exports.signout = async (req, res) => {
-  try {
-    req.session = null;
-    return res.status(200).send({ message: "You've been signed out!" });
-  } catch (err) {
-    this.next(err);
-  }
+  },
 };

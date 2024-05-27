@@ -1,24 +1,27 @@
 module.exports = (app) => {
-  const auth = require("../controllers/auth.controller");
-  const { verifySignUp } = require("../middleware");
+  const {
+    registerUser,
+    loginUser,
+    signOutUser,
+  } = require("../controllers/auth.controller.js");
 
-  var router = require("express").Router();
+  const {
+    userRegisterValidate,
+    userLoginValidate,
+  } = require("../utils/userValidations.js");
 
-  // Sign up a new user with validation checks
-  router.post(
-    "/auth/signup",
-    [
-      verifySignUp.checkRequiredFields,
-      verifySignUp.checkDuplicateUsernameOrEmail,
-    ],
-    auth.signup
-  );
+  //   const { ensureAuthenticated } = require("../utils/auth.js");
 
-  // Sign in an existing user
-  router.post("/auth/signin", auth.signin);
+  const router = require("express").Router();
 
-  // Sign out the user
-  router.post("/auth/signout", auth.signout);
+  // Register a new user
+  router.post("/auth/register", userRegisterValidate, registerUser);
+
+  // Login a user
+  router.post("/auth/login", userLoginValidate, loginUser);
+
+  // Logout a user
+  router.post("/auth/logout", signOutUser);
 
   app.use("/api", router);
 };
