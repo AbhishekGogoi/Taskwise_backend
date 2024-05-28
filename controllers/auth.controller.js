@@ -13,7 +13,7 @@ const bcrypt = require("bcryptjs");
 module.exports = {
   /**
    * @swagger
-   * /auth/register:
+   * /api/auth/register:
    *   post:
    *     summary: Register a new user
    *     tags: [Auth]
@@ -27,12 +27,13 @@ module.exports = {
    *               - email
    *               - password
    *             properties:
+   *               username:
+   *                 type: string
    *               email:
    *                 type: string
    *               password:
    *                 type: string
-   *               fullName:
-   *                 type: string
+   *
    *     responses:
    *       201:
    *         description: User registered successfully
@@ -48,10 +49,11 @@ module.exports = {
    *                   properties:
    *                     _id:
    *                       type: string
+   *                     username:
+   *                       type: string
    *                     email:
    *                       type: string
-   *                     fullName:
-   *                       type: string
+   *
    *       500:
    *         description: Server error
    *         content:
@@ -83,7 +85,7 @@ module.exports = {
 
   /**
    * @swagger
-   * /auth/login:
+   * /api/auth/login:
    *   post:
    *     summary: Login a user
    *     tags: [Auth]
@@ -166,7 +168,7 @@ module.exports = {
 
   /**
    * @swagger
-   * /auth/logout:
+   * /api/auth/logout:
    *   post:
    *     summary: Logout a user
    *     tags: [Auth]
