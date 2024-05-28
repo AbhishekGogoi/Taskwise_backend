@@ -1,5 +1,7 @@
 module.exports = (app) => {
     const project = require("../controllers/project.controller.js");
+    const board = require("../controllers/board.controller.js");
+    const task = require("../controllers/task.controller.js");
 
     var router = require("express").Router();
 
@@ -12,32 +14,32 @@ module.exports = (app) => {
     // Update a project by ID
     router.put('/projects/:id', project.updateProjectById);
 
-    // Delete a project by ID
-    router.delete('/projects/:id', project.deleteProjectById);
+    // Deactivate a project by ID
+    router.patch('/projects/:id/deactivate', project.deactivateProjectById);
 
     // Route to add a new column to a project
-    router.put('/projects/:projectId/columns', project.addColumnToProject);
+    router.post('/projects/:projectId/columns', board.addColumnToProject);
 
     // Route to update a column in a project
-    router.put('/projects/:projectId/columns/:columnId', project.updateColumn);
+    router.put('/projects/:projectId/columns/:columnId', board.updateColumn);
 
-    // Route to delete a column from a project
-    router.delete('/projects/:projectId/columns/:columnId', project.deleteColumn);
+    // Route to Deactivate a column from a project
+    router.patch('/projects/:projectId/columns/:columnId/deactivate', board.deactivateColumn);
 
     //Route to change column order
-    router.put('/projects/:projectId/order', project.updateColumnOrder);
-
-    // Route to add a new task to a project
-    router.post('/projects/:projectId/tasks', project.addTaskToProject);
-
-    // Route to update a task in a project
-    router.put("/projects/:projectId/tasks/:taskId", project.updateTaskInProject);
-
-    // Route to delete a task from a project
-    router.delete("/projects/:projectId/tasks/:taskId", project.deleteTaskInProject);
+    router.put('/projects/:projectId/order', board.updateColumnOrder);
 
     // Route to move a task from one column to another
-    router.put("/projects/:projectId/tasks/:taskId/move", project.moveTaskToAnotherColumn);
+    router.put("/projects/:projectId/tasks/:taskId/move", board.moveTaskToAnotherColumn);
+
+    // Route to add a new task to a project
+    router.post('/projects/:projectId/tasks', task.addTaskToProject);
+
+    // Route to update a task in a project
+    router.put("/projects/:projectId/tasks/:taskId", task.updateTaskInProject);
+
+    // Route to Deactivate a task from a project
+    router.patch("/projects/:projectId/tasks/:taskId/deactivate", task.deactivateTaskInProject);
 
     app.use("/api", router);
 };

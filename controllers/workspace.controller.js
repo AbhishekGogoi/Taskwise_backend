@@ -1,5 +1,6 @@
 const db = require("../models");
 const Workspace = db.workspace;
+const User = db.user;
 
 /**
  * @swagger
@@ -21,10 +22,13 @@ const Workspace = db.workspace;
  *                 type: string
  *               imgUrl:
  *                 type: string
+ *               creatorUsername:
+ *                 type: string
  *             example:
- *               name: "Workspace Name"
+ *               name: "Unique Workspace Name"
  *               description: "Workspace Description"
- *               imgUrl: "https://example.com/image.jpg"
+ *               imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+ *               creatorUsername: "Unique Username"
  *     responses:
  *       200:
  *         description: Workspace created successfully
@@ -80,18 +84,31 @@ const Workspace = db.workspace;
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, imgUrl } = req.body;
+        const { name, description, imgUrl, creatorUsername } = req.body;
         
         if (!name) {
             return res.status(400).send({ message: "Name field is required" });
+        }
+
+        if (!creatorUsername) {
+            return res.status(400).send({ message: "Please enter the creator Username" });
+        }
+
+        const user = await User.findOne({ username: creatorUsername });
+
+        if (!user) {
+            return res.status(404).send({ message: "User not found" });
         }
 
         const workspace = new Workspace({
             name,
             description,
             imgUrl,
-            creatorUserID: req.userId, // Assuming userId is available in req.userId
+            creatorUserID: user._id,
             isActive: true,
+            members: [{ 
+                user: user._id, 
+                role: 'Admin' }] // Adding creator as an admin
         });
 
         const savedWorkspace = await workspace.save();
@@ -189,7 +206,7 @@ exports.getAllWorkspaces = async (req, res) => {
  *             example:
  *               name: "Updated Workspace Name"
  *               description: "Updated Workspace Description"
- *               imgUrl: "https://example.com/updated-image.jpg"
+ *               imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
  *     responses:
  *       200:
  *         description: Workspace updated successfully
@@ -260,7 +277,7 @@ exports.updateWorkspace = async (req, res) => {
 /**
  * @swagger
  * /api/workspaces/{workspaceId}/deactivate:
- *   put:
+ *   patch:
  *     summary: Deactivate a workspace
  *     tags: 
  *       - Workspace
@@ -323,13 +340,13 @@ exports.deactivateWorkspace = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
 
-        // Check if the user is admin
-        const userIsAdmin = workspace.members.some(
-            member => member.userID.toString() === req.userId && member.role === 'Admin'
-        );
-        if (!userIsAdmin) {
-            return res.status(403).send({ message: "Forbidden: You are not allowed to deactivate this workspace" });
-        }
+        // // Check if the user is admin
+        // const userIsAdmin = workspace.members.some(
+        //     member => member.userID.toString() === req.userId && member.role === 'Admin'
+        // );
+        // if (!userIsAdmin) {
+        //     return res.status(403).send({ message: "Forbidden: You are not allowed to deactivate this workspace" });
+        // }
 
         workspace.isActive = false;
         workspace.deactivatedAt = new Date();
@@ -339,145 +356,6 @@ exports.deactivateWorkspace = async (req, res) => {
     } catch (err) {
         console.error("Error deactivating workspace:", err);
         res.status(500).send({ message: "Error deactivating workspace" });
-    }
-};
-
-/**
- * @swagger
- * /api/workspaces/{workspaceId}/members:
- *   get:
- *     summary: Retrieve all members of a workspace
- *     tags:
- *       - Workspace
- *     parameters:
- *       - in: path
- *         name: workspaceId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A list of members
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   userID:
- *                     type: string
- *                   role:
- *                     type: string
- *                   joinedAt:
- *                     type: string
- *       404:
- *         description: Workspace not found
- *       500:
- *         description: Internal server error
- */
-exports.getWorkspaceMembers = async (req, res) => {
-    try {
-        const { workspaceId } = req.params;
-        if (!isValidObjectId(workspaceId)) {
-            return res.status(400).send({ message: "Invalid workspace ID" });
-        }
-        const workspace = await Workspace.findById(workspaceId);
-        if (!workspace) {
-            return res.status(404).send({ message: "Workspace not found" });
-        }
-        res.status(200).send(workspace.members);
-    } catch (err) {
-        console.error("Error retrieving workspace members:", err);
-        res.status(500).send({ message: "Error retrieving workspace members" });
-    }
-};
-
-/**
- * @swagger
- * /api/workspaces/{workspaceId}/projects:
- *   get:
- *     summary: Retrieve all projects of a workspace
- *     tags:
- *       - Workspace
- *     parameters:
- *       - in: path
- *         name: workspaceId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A list of projects
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: string
- *       404:
- *         description: Workspace not found
- *       500:
- *         description: Internal server error
- */
-exports.getWorkspaceProjects = async (req, res) => {
-    try {
-        const { workspaceId } = req.params;
-        if (!isValidObjectId(workspaceId)) {
-            return res.status(400).send({ message: "Invalid workspace ID" });
-        }
-        const workspace = await Workspace.findById(workspaceId);
-        if (!workspace) {
-            return res.status(404).send({ message: "Workspace not found" });
-        }
-        res.status(200).send(workspace.projects);
-    } catch (err) {
-        console.error("Error retrieving workspace projects:", err);
-        res.status(500).send({ message: "Error retrieving workspace projects" });
-    }
-};
-
-/**
- * @swagger
- * /api/workspaces/{workspaceId}/tasks:
- *   get:
- *     summary: Retrieve all tasks of a workspace
- *     tags:
- *       - Workspace
- *     parameters:
- *       - in: path
- *         name: workspaceId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A list of tasks
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: string
- *       404:
- *         description: Workspace not found
- *       500:
- *         description: Internal server error
- */
-exports.getWorkspaceTasks = async (req, res) => {
-    try {
-        const { workspaceId } = req.params;
-        if (!isValidObjectId(workspaceId)) {
-            return res.status(400).send({ message: "Invalid workspace ID" });
-        }
-        const workspace = await Workspace.findById(workspaceId);
-        if (!workspace) {
-            return res.status(404).send({ message: "Workspace not found" });
-        }
-        res.status(200).send(workspace.tasks);
-    } catch (err) {
-        console.error("Error retrieving workspace tasks:", err);
-        res.status(500).send({ message: "Error retrieving workspace tasks" });
     }
 };
 
