@@ -6,5 +6,38 @@ module.exports = (app) => {
     // Create a new Project
     router.post("/projects", project.create);
 
+    //Get a project by id
+    router.get("/projects/:id", project.getProjectById);
+
+    // Update a project by ID
+    router.put('/projects/:id', project.updateProjectById);
+
+    // Delete a project by ID
+    router.delete('/projects/:id', project.deleteProjectById);
+
+    // Route to add a new column to a project
+    router.put('/projects/:projectId/columns', project.addColumnToProject);
+
+    // Route to update a column in a project
+    router.put('/projects/:projectId/columns/:columnId', project.updateColumn);
+
+    // Route to delete a column from a project
+    router.delete('/projects/:projectId/columns/:columnId', project.deleteColumn);
+
+    //Route to change column order
+    router.put('/projects/:projectId/order', project.updateColumnOrder);
+
+    // Route to add a new task to a project
+    router.post('/projects/:projectId/tasks', project.addTaskToProject);
+
+    // Route to update a task in a project
+    router.put("/projects/:projectId/tasks/:taskId", project.updateTaskInProject);
+
+    // Route to delete a task from a project
+    router.delete("/projects/:projectId/tasks/:taskId", project.deleteTaskInProject);
+
+    // Route to move a task from one column to another
+    router.put("/projects/:projectId/tasks/:taskId/move", project.moveTaskToAnotherColumn);
+
     app.use("/api", router);
 };
