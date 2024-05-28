@@ -4,14 +4,17 @@ module.exports = mongoose => {
     const workspaceSchema = new mongoose.Schema({
         name: { type: String, required: true, unique: true },
         description: { type: String },
-        imgUrl: { type: String, required: true },
+        imgUrl: { type: String, required: true, default: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb'},
         projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
-        // creatorUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        creatorUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         isActive: { type: Boolean, default: true },
+        deactivatedAt: { type: Date },
         members: [{
-            // user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
             role: { type: String, enum: ['Admin', 'Member'], required: true },
-            joinedAt: { type: Date, default: Date.now }
+            isActive: { type: Boolean, default: true },
+            joinedAt: { type: Date, default: Date.now },
+            deactivatedAt: { type: Date }
         }]
     }, { timestamps: true });
 
