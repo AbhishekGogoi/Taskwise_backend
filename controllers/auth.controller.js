@@ -3,7 +3,68 @@ const UserModel = db.user;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication and authorization endpoints
+ */
+
 module.exports = {
+  /**
+   * @swagger
+   * /auth/register:
+   *   post:
+   *     summary: Register a new user
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *             properties:
+   *               email:
+   *                 type: string
+   *               password:
+   *                 type: string
+   *               fullName:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: User registered successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     _id:
+   *                       type: string
+   *                     email:
+   *                       type: string
+   *                     fullName:
+   *                       type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 err:
+   *                   type: object
+   */
+
   registerUser: async (req, res) => {
     //1.validate req body-userRegisterValidate
     //2.create userModel
@@ -19,6 +80,59 @@ module.exports = {
       return res.status(500).json({ message: "error", err: err });
     }
   },
+
+  /**
+   * @swagger
+   * /auth/login:
+   *   post:
+   *     summary: Login a user
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *             properties:
+   *               email:
+   *                 type: string
+   *               password:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Login successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 jwtToken:
+   *                   type: string
+   *       401:
+   *         description: Invalid email or password
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 error:
+   *                   type: object
+   */
+
   loginUser: async (req, res) => {
     //1.check user using email
     //2.compare password
@@ -49,6 +163,33 @@ module.exports = {
       return res.status(500).json({ message: "error", error: err });
     }
   },
+
+  /**
+   * @swagger
+   * /auth/logout:
+   *   post:
+   *     summary: Logout a user
+   *     tags: [Auth]
+   *     responses:
+   *       200:
+   *         description: User signed out successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   */
 
   signOutUser: (req, res) => {
     try {
