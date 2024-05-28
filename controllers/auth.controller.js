@@ -38,13 +38,14 @@ module.exports = {
       }
       const tokenObject = {
         _id: user._id,
-        fullName: user.fullName,
+        username: user.username,
         email: user.email,
       };
       const jwtToken = jwt.sign(tokenObject, process.env.SECRET, {
         expiresIn: "1h",
       }); //1 hour
-      return res.status(200).json({ jwtToken });
+      
+      return res.status(200).json({ jwtToken: jwtToken, user: tokenObject });
     } catch (err) {
       return res.status(500).json({ message: "error", error: err });
     }
