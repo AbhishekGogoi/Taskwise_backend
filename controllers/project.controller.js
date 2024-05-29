@@ -114,11 +114,11 @@ exports.create = async (req, res) => {
             return res.status(400).send({ message: "Please enter the creator details" });
         }
 
-        // const user = await User.findById(creatorUserID);
+        const user = await User.findById(creatorUserID);
 
-        // if (!user) {
-        //     return res.status(404).send({ message: "User not found" });
-        // }
+        if (!user) {
+            return res.status(404).send({ message: "User not found" });
+        }
 
         if (!workspaceName) {
             return res.status(400).send({ message: "Please enter the workspace name" });
