@@ -24,14 +24,14 @@ const User = db.user;
  *           schema:
  *             type: object
  *             properties:
- *               memberUsername:
+ *               memberEmail:
  *                 type: string
- *                 description: Username of the member to add to the workspace
+ *                 description: Email of the member to add to the workspace
  *               role:
  *                 type: string
  *                 description: Role of the member (optional)
  *             example:
- *               memberUsername: "Unique userame"
+ *               memberEmail: "abc@email.com"
  *               role: "Admin or Member"
  *     responses:
  *       200:
@@ -39,7 +39,7 @@ const User = db.user;
  *         schema:
  *           $ref: "#/definitions/Workspace"
  *       400:
- *         description: Invalid workspace ID or member username
+ *         description: Invalid workspace ID or member Email
  *       404:
  *         description: Workspace not found or User not found
  *       500:
@@ -48,7 +48,7 @@ const User = db.user;
 exports.addMemberToWorkspace = async (req, res) => {
     try {
         const { workspaceId } = req.params;
-        const { memberUsername, role } = req.body;
+        const { memberEmail, role } = req.body;
 
         // Check if workspaceId is a valid ObjectId
         if (!isValidObjectId(workspaceId)) {
@@ -61,16 +61,16 @@ exports.addMemberToWorkspace = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
 
-        // Find the user by username
-        const user = await User.findOne({ username: memberUsername });
+        // Find the user by Email
+        const user = await User.findOne({ email: memberEmail });
         if (!user) {
-            return res.status(404).send({ message: `User with username ${memberUsername} not found` });
+            return res.status(404).send({ message: `User with Email ${memberEmail} not found` });
         }
 
         // Check if the member is already in the workspace
         const existingMember = workspace.members.find(member => member.user.toString() === user._id.toString());
         if (existingMember) {
-            return res.status(400).send({ message: `Member with username ${memberUsername} already in workspace` });
+            return res.status(400).send({ message: `Member with Email ${memberEmail} already in workspace` });
         }
 
         // Add the member to the workspace
@@ -408,6 +408,8 @@ exports.getAllTasksByUserId = async (req, res) => {
         });
 
         console.log("Total tasks collected: ", tasks.length);
+
+        console.log("Total tasks collected: ", tasks);
 
         // Respond with the list of tasks
         res.status(200).json(tasks);

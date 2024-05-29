@@ -22,13 +22,13 @@ const User = db.user;
  *                 type: string
  *               imgUrl:
  *                 type: string
- *               creatorUsername:
+ *               creatorUserId:
  *                 type: string
  *             example:
  *               name: "Unique Workspace Name"
  *               description: "Workspace Description"
  *               imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
- *               creatorUsername: "Unique Username"
+ *               creatorUserID: "UserId"
  *     responses:
  *       200:
  *         description: Workspace created successfully
@@ -84,17 +84,17 @@ const User = db.user;
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, imgUrl, creatorUsername } = req.body;
+        const { name, description, imgUrl, creatorUserID } = req.body;
         
         if (!name) {
             return res.status(400).send({ message: "Name field is required" });
         }
 
-        if (!creatorUsername) {
-            return res.status(400).send({ message: "Please enter the creator Username" });
+        if (!creatorUserID) {
+            return res.status(400).send({ message: "Please enter the creator User ID" });
         }
 
-        const user = await User.findOne({ username: creatorUsername });
+        const user = await User.findById(creatorUserID );
 
         if (!user) {
             return res.status(404).send({ message: "User not found" });
