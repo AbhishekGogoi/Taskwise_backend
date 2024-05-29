@@ -234,6 +234,82 @@ exports.getWorkspaceTasks = async (req, res) => {
 
 /**
  * @swagger
+ * /api/workspaces/user/{userId}/workspaces:
+ *   get:
+ *     summary: Retrieve all workspaces where the user is a member
+ *     tags:
+ *       - Member
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: A list of workspaces
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   imgUrl:
+ *                     type: string
+ *       404:
+ *         description: No workspaces found for this user
+ *       500:
+ *         description: Internal server error
+ */
+exports.getAllWorkspacesByUserId = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        // Validate userId
+        if (!isValidObjectId(userId)) {
+            return res.status(400).json({ message: "Invalid userId format" });
+        }
+
+        // Check if the user exists
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Find all workspaces where the user is a member
+        const workspaces = await Workspace.find({
+            "members.user": userId,
+            "members.isActive": true
+        });
+
+        if (workspaces.length === 0) {
+            return res.status(404).json({ message: "No workspaces found for this user" });
+        }
+
+        console.log("Workspaces found: ", workspaces.length);
+
+        // Map workspaces to the response format
+        const response = workspaces.map(workspace => ({
+            id: workspace._id,
+            name: workspace.name,
+            imgUrl: workspace.imgUrl
+        }));
+
+        // Respond with the list of workspaces
+        res.status(200).json(response);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+};
+
+/**
+ * @swagger
  * /api/workspaces/user/{userId}/projects:
  *   get:
  *     summary: Retrieve all projects of all workspaces where the user is a member

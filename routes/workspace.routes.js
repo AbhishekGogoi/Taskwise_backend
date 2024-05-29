@@ -31,6 +31,9 @@ module.exports = (app) => {
     // Get all tasks of a Workspace
     router.get("/:workspaceId/tasks", memberController.getWorkspaceTasks);
 
+    // Get all workspaces of a User
+    router.get("/user/:userId/workspaces", memberController.getAllWorkspacesByUserId);
+
     // Get all projects of a User
     router.get("/user/:userId/projects", memberController.getAllProjectsByUserId);
 
