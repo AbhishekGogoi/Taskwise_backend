@@ -108,13 +108,13 @@ const mongoose=require("mongoose")
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, workspaceName, order, columns, tasks, creatorUsername } = req.body;
-
-        if (!creatorUsername) {
-            return res.status(400).send({ message: "Please enter the creator Username" });
+        const { name, description, workspaceName, order, columns, tasks, creatorUserID } = req.body;
+        console.log(req.body)
+        if (!creatorUserID) {
+            return res.status(400).send({ message: "Please enter the creator details" });
         }
 
-        const user = await User.findOne({ username: creatorUsername });
+        const user = await User.findById(creatorUserID);
 
         if (!user) {
             return res.status(404).send({ message: "User not found" });
@@ -130,7 +130,7 @@ exports.create = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
 
-        const isMember = workspace.members.some(member => member.user.equals(user._id));
+        const isMember = workspace.members.some(member => member.user.equals(creatorUserID));
         if (!isMember) {
             return res.status(403).send({ message: "Forbidden: You are not a member of the specified workspace" });
         }        
@@ -149,7 +149,7 @@ exports.create = async (req, res) => {
             name,
             description,
             workspaceId: workspace._id,
-            creatorUserID: user._id,
+            creatorUserID: creatorUserID,
             order,
             columns: defaultColumns,
             tasks
