@@ -208,6 +208,7 @@ module.exports = {
    */
 
   signOutUser: (req, res) => {
+    console.log("Enter into signout");
     try {
       req.logout((err) => {
         if (err) {
@@ -220,11 +221,9 @@ module.exports = {
         req.session.destroy((err) => {
           if (err) {
             console.error(err);
-            return res
-              .status(500)
-              .send({
-                message: "An error occurred while destroying the session.",
-              });
+            return res.status(500).send({
+              message: "An error occurred while destroying the session.",
+            });
           }
 
           res.clearCookie("connect.sid"); // Clear the session cookie (typically 'connect.sid')
@@ -267,6 +266,7 @@ module.exports = {
           ? name.split(" ").join("").toLowerCase() +
             Math.random().toString(36).slice(-8)
           : "defaultUsername" + Math.random().toString(36).slice(-8);
+        console.log(username, "username");
         const generatedPassword =
           Math.random().toString(36).slice(-8) +
           Math.random().toString(36).slice(-8);
