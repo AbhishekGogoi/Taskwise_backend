@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-const cookieSession = require("cookie-session");
+// const cookieSession = require("cookie-session");
+const cookieParser = require("cookie-parser");
+const session = require("express-session");
+const passport = require("passport");
+const passportSetup = require("./utils/passport");
 
 const app = express();
 const db = require("./models");
@@ -16,6 +20,29 @@ app.use(express.urlencoded({ extended: true }));
 
 // parse requests of content-type - application/json
 app.use(express.json());
+
+// use of cookieParser
+app.use(cookieParser());
+
+// app.use(
+//   cookieSession({
+//     name: "session",
+//     keys: ["cyberwolve"],
+//     maxAge: 24 * 60 * 60 * 100,
+//   })
+// );
+
+app.use(
+  session({
+    secret: "taskwise_secret", // Use a strong secret key in production
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Set secure to true in production when using HTTPS
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // MongoDB connection
 db.mongoose
