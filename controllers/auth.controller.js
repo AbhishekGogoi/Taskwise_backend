@@ -68,11 +68,19 @@ module.exports = {
    */
 
   registerUser: async (req, res) => {
-    //1.validate req body-userRegisterValidate
+    // Validate request body
+    const { username, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User is already registered" });
+    }
+
     //2.create userModel
-    const userModel = new UserModel(req.body);
+    const userModel = new UserModel({ username, email, password });
     //3.do password encryption
-    userModel.password = await bcrypt.hash(req.body.password, 10);
+    userModel.password = await bcrypt.hash(password, 10);
     //4.save data to mongodb
     try {
       const response = await userModel.save();
@@ -140,15 +148,14 @@ module.exports = {
     //2.compare password
     //3.create jwt token
     //4.send response to client
+    const { email, password } = req.body;
+
     try {
-      const user = await UserModel.findOne({ email: req.body.email });
+      const user = await UserModel.findOne({ email });
       if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
-      const isPassEqual = await bcrypt.compare(
-        req.body.password,
-        user.password
-      );
+      const isPassEqual = await bcrypt.compare(password, user.password);
       if (!isPassEqual) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
@@ -160,7 +167,7 @@ module.exports = {
       const jwtToken = jwt.sign(tokenObject, process.env.SECRET, {
         expiresIn: "1h",
       }); //1 hour
-      
+
       return res.status(200).json({ jwtToken: jwtToken, user: tokenObject });
     } catch (err) {
       return res.status(500).json({ message: "error", error: err });
