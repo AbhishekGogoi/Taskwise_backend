@@ -8,8 +8,8 @@ const taskSchema = new mongoose.Schema({
     content: { type: String },
     assigneeUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user
     dueDate: { type: Date },
-    priority: { type: String },
-    status: { type: String } // To Do, In Progress, Done, etc.
+    priority: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
+    status: { type: String, enum: ['To Do', 'In Progress', 'Done'], default: 'To Do' }
 }, { timestamps: true });
 
 // Define Column schema

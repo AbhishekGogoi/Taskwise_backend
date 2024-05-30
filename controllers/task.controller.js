@@ -30,13 +30,30 @@ const mongoose=require("mongoose")
  *                 type: string
  *               columnId:
  *                 type: string
+ *               assigneeUserID:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *               priority:
+ *                 type: string
+ *                 enum: [Low, Medium, High]
+ *               status:
+ *                 type: string
+ *                 enum: [To Do, In Progress, Done]
  *             example:
  *               taskName: "New Task"
  *               content: "Task content here"
  *               columnId: "columnId1"
+ *               assigneeUserID: "userId123"
+ *               dueDate: "2023-12-31"
+ *               priority: "High"
+ *               status: "To Do"
  *     responses:
  *       201:
  *         description: Task added successfully
+ *       400:
+ *         description: Invalid input
  *       404:
  *         description: Project or column not found
  *       500:
@@ -45,12 +62,40 @@ const mongoose=require("mongoose")
 exports.addTaskToProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
-        const { taskName, content, columnId } = req.body;
+        const { taskName, content, columnId, assigneeUserID, dueDate, priority, status } = req.body;
+
+        // Validate priority and status
+        const validPriorities = ['Low', 'Medium', 'High'];
+        const validStatuses = ['To Do', 'In Progress', 'Done'];
+
+        if (priority && !validPriorities.includes(priority)) {
+            return res.status(400).json({ message: `Invalid priority value. Allowed values are: ${validPriorities.join(', ')}` });
+        }
+
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({ message: `Invalid status value. Allowed values are: ${validStatuses.join(', ')}` });
+        }
 
         // Find the project by ID
         const project = await Project.findById(projectId);
         if (!project) {
             return res.status(404).json({ message: "Project not found" });
+        }
+
+        // Find the workspace containing the project
+        const workspace = await Workspace.findOne({ projects: projectId });
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found for the project" });
+        }
+
+        // If an assignee is provided, check if they are a member of the workspace
+        if (assigneeUserID) {
+            const isMember = workspace.members.some(member => 
+                member.user.equals(new mongoose.Types.ObjectId(assigneeUserID)) && member.isActive
+            );
+            if (!isMember) {
+                return res.status(400).json({ message: "Assignee must be a member of the workspace" });
+            }
         }
 
         // Find the column by ID within the project
@@ -59,10 +104,14 @@ exports.addTaskToProject = async (req, res) => {
             return res.status(404).json({ message: "Column not found in the project" });
         }
 
-        // Create a new task
+        // Create a new task with all the details
         const newTask = {
-            taskName: taskName,
-            content: content
+            taskName,
+            content,
+            assigneeUserID: assigneeUserID ? new mongoose.Types.ObjectId(assigneeUserID) : null,
+            dueDate,
+            priority,
+            status
         };
 
         // Add the new task to the project's tasks array
@@ -80,7 +129,7 @@ exports.addTaskToProject = async (req, res) => {
         // Save the project again with the updated column
         await savedProject.save();
 
-        res.status(201).json(savedProject);
+        res.status(201).json({ taskId: newTaskId, project: savedProject });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal Server Error" });
