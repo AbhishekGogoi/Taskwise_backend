@@ -3,6 +3,7 @@ const UserModel = db.user;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 // // Function to generate a random 4-digit code for forgot passowrd
 function generateCode() {
@@ -83,7 +84,6 @@ module.exports = {
    */
 
   registerUser: async (req, res) => {
-    console.log("Enter into register");
     // Validate request body
     const { username, email, password } = req.body;
 
@@ -335,7 +335,9 @@ module.exports = {
 
       await transporter.sendMail(mailOptions);
 
-      res.status(200).json({ message: "Reset code sent to email" });
+      res
+        .status(200)
+        .json({ message: "Reset code sent to email", email: email });
     } catch (err) {
       res.status(500).json({ message: "Error", error: err });
     }
