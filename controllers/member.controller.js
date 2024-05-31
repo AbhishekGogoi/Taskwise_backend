@@ -291,8 +291,6 @@ exports.getAllWorkspacesByUserId = async (req, res) => {
             return res.status(404).json({ message: "No workspaces found for this user" });
         }
 
-        console.log("Workspaces found: ", workspaces.length);
-
         // Map workspaces to the response format
         const response = workspaces.map(workspace => ({
             id: workspace._id,
@@ -369,11 +367,8 @@ exports.getAllProjectsByUserId = async (req, res) => {
             return res.status(404).json({ message: "No workspaces or projects found for this user" });
         }
 
-        console.log("Workspaces found: ", workspaces.length);
-
         // Collect and map all projects from the found workspaces
         const projects = workspaces.flatMap(workspace => {
-            console.log(`Workspace: ${workspace.name}, Projects: ${workspace.projects.length}`);
             return workspace.projects.map(project => ({
                 id: project._id,
                 name: project.name,
@@ -381,8 +376,6 @@ exports.getAllProjectsByUserId = async (req, res) => {
                 workspaceName: workspace.name
             }));
         });
-
-        console.log("Total projects collected: ", projects.length);
 
         // Respond with the list of projects
         res.status(200).json(projects);
@@ -466,8 +459,6 @@ exports.getAllTasksByUserId = async (req, res) => {
             return res.status(404).json({ message: "No workspaces or projects found for this user" });
         }
 
-        console.log("Workspaces found: ", workspaces.length);
-
         // Collect and map all tasks from the found workspaces and projects
         const tasks = workspaces.flatMap(workspace => {
             return workspace.projects.flatMap(project => {
@@ -482,10 +473,6 @@ exports.getAllTasksByUserId = async (req, res) => {
                 }));
             });
         });
-
-        console.log("Total tasks collected: ", tasks.length);
-
-        console.log("Total tasks collected: ", tasks);
 
         // Respond with the list of tasks
         res.status(200).json(tasks);

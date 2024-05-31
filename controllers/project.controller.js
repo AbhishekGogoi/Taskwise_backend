@@ -23,7 +23,7 @@ const mongoose=require("mongoose")
  *                 type: string
  *               workspaceName:
  *                 type: string
- *               creatorUsername:
+ *               creatorUserID:
  *                 type: string
  *               imgUrl:
  *                 type: string
@@ -54,9 +54,9 @@ const mongoose=require("mongoose")
  *             example:
  *               name: "Project Name"
  *               description: "Project Description"
- *               workspaceName: "Unique Workspace Name"
+ *               workspaceID: "Unique Workspace ID"
  *               imgUrl: "https://img.freepik.com/free-vector/hand-drawn-minimal-background_23-2149001650.jpg"
- *               creatorUsername: "Unique Username"
+ *               creatorUserID: "Unique User ID"
  *     responses:
  *       201:
  *         description: Project created successfully
@@ -108,8 +108,7 @@ const mongoose=require("mongoose")
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, workspaceName, order, columns, tasks, creatorUserID } = req.body;
-        console.log(req.body)
+        const { name, description, workspaceID, order, columns, tasks, creatorUserID } = req.body;
         if (!creatorUserID) {
             return res.status(400).send({ message: "Please enter the creator details" });
         }
@@ -120,11 +119,11 @@ exports.create = async (req, res) => {
             return res.status(404).send({ message: "User not found" });
         }
 
-        if (!workspaceName) {
-            return res.status(400).send({ message: "Please enter the workspace name" });
+        if (!workspaceID) {
+            return res.status(400).send({ message: "Please enter the workspace ID" });
         }
 
-        const workspace = await Workspace.findOne({ name: workspaceName });
+        const workspace = await Workspace.findById(workspaceID);
 
         if (!workspace) {
             return res.status(404).send({ message: "Workspace not found" });
