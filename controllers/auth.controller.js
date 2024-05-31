@@ -339,7 +339,9 @@ module.exports = {
         .status(200)
         .json({ message: "Reset code sent to email", email: email });
     } catch (err) {
-      res.status(500).json({ message: "Error", error: err });
+      res
+        .status(500)
+        .json({ message: "Error sending reset code", error: err.message });
     }
   },
 
@@ -361,7 +363,9 @@ module.exports = {
 
       res.status(200).json({ message: "Reset code verified" });
     } catch (err) {
-      res.status(500).json({ message: "Error", error: err });
+      res
+        .status(500)
+        .json({ message: "Error verifying reset code", error: err.message });
     }
   },
 
@@ -389,7 +393,9 @@ module.exports = {
 
       res.status(200).json({ message: "Password reset successful" });
     } catch (err) {
-      res.status(500).json({ message: "Error", error: err });
+      res
+        .status(500)
+        .json({ message: "Error resetting password", error: err.message });
     }
   },
 };
