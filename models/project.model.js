@@ -9,7 +9,7 @@ const taskSchema = new mongoose.Schema({
     assigneeUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user
     dueDate: { type: Date },
     priority: { type: String },
-    status: { type: String }, // To Do, In Progress, Done, etc.
+    //status: { type: String }, // To Do, In Progress, Done, etc.
     attachments:[{ type: String}]
 }, { timestamps: true });
 

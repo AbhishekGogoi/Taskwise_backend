@@ -108,10 +108,9 @@ exports.addTaskToProject = async (req, res) => {
         const newTask = {
             taskName,
             content,
-            assigneeUserID: assigneeUserID ? new mongoose.Types.ObjectId(assigneeUserID) : null,
+            assigneeUserID: assigneeUserID ? assigneeUserID : null,
             dueDate,
-            priority,
-            status
+            priority
         };
 
         // Add the new task to the project's tasks array
