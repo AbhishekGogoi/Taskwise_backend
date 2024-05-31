@@ -2,6 +2,21 @@ const db = require("../models");
 const UserModel = db.user;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
+
+// // Function to generate a random 4-digit code for forgot passowrd
+function generateCode() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+// Configure nodemailer transporter for sending emails for forgot password
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: process.env.SENDER_EMAIL,
+    pass: process.env.SENDER_EMAIL_PASSWORD,
+  },
+});
 
 /**
  * @swagger
@@ -68,6 +83,7 @@ module.exports = {
    */
 
   registerUser: async (req, res) => {
+    console.log("Enter into register");
     // Validate request body
     const { username, email, password } = req.body;
 
@@ -291,6 +307,87 @@ module.exports = {
       }
     } catch (error) {
       next(error);
+    }
+  },
+
+  // Forgot Password
+  forgotPassword: async (req, res) => {
+    const { email } = req.body;
+    try {
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Generate a 4-digit code
+      const code = generateCode();
+      user.resetCode = code;
+      user.resetCodeExpiry = Date.now() + 3600000; // Code valid for 1 hour
+      await user.save();
+
+      // Send the code to the user's email
+      const mailOptions = {
+        from: process.env.SENDER_EMAIL,
+        to: user.email,
+        subject: "Password Reset Code",
+        text: `Your password reset code is: ${code}`,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res.status(200).json({ message: "Reset code sent to email" });
+    } catch (err) {
+      res.status(500).json({ message: "Error", error: err });
+    }
+  },
+
+  // Verify Reset Code
+  verifyResetCode: async (req, res) => {
+    const { email, code } = req.body;
+    try {
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Validate the code
+      if (user.resetCode !== code || Date.now() > user.resetCodeExpiry) {
+        return res
+          .status(400)
+          .json({ message: "Invalid or expired reset code" });
+      }
+
+      res.status(200).json({ message: "Reset code verified" });
+    } catch (err) {
+      res.status(500).json({ message: "Error", error: err });
+    }
+  },
+
+  // Reset Password
+  resetPassword: async (req, res) => {
+    const { email, code, newPassword } = req.body;
+    try {
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Validate the code
+      if (user.resetCode !== code || Date.now() > user.resetCodeExpiry) {
+        return res
+          .status(400)
+          .json({ message: "Invalid or expired reset code" });
+      }
+
+      // Update the password
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.resetCode = undefined; // Clear the reset code and expiry
+      user.resetCodeExpiry = undefined;
+      await user.save();
+
+      res.status(200).json({ message: "Password reset successful" });
+    } catch (err) {
+      res.status(500).json({ message: "Error", error: err });
     }
   },
 };

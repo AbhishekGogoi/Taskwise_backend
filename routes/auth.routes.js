@@ -5,6 +5,9 @@ module.exports = (app) => {
     registerUser,
     loginUser,
     signOutUser,
+    forgotPassword,
+    verifyResetCode,
+    resetPassword,
   } = require("../controllers/auth.controller.js");
 
   const router = require("express").Router();
@@ -19,12 +22,12 @@ module.exports = (app) => {
   router.post("/auth/logout", signOutUser);
 
   //Google OAuth routes
-  router.get(
+  router.post(
     "/auth/google",
     passport.authenticate("google", { scope: ["profile", "email"] })
   );
 
-  router.get(
+  router.post(
     "/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/" }),
     (req, res) => {
@@ -32,6 +35,15 @@ module.exports = (app) => {
       res.redirect("http://localhost:3000/projects"); // Adjust the URL as needed
     }
   );
+
+  // Route to handle forgot password (send reset code)
+  router.post("/auth/forgotpassword", forgotPassword);
+
+  // Route to handle verification of the reset code
+  router.post("/auth/forgotpassword/verification", verifyResetCode);
+
+  // Route to handle resetting the password
+  router.post("/auth/forgotpassword/resetpassword", resetPassword);
 
   app.use("/api", router);
 };

@@ -17,6 +17,12 @@ module.exports = (mongoose) => {
         type: String,
         required: true,
       },
+      resetCode: {
+        type: String,
+      },
+      resetCodeExpiry: {
+        type: Date,
+      },
     },
     { timestamps: true }
   );
