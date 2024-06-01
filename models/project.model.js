@@ -1,3 +1,4 @@
+const { string } = require("joi");
 const { default: mongoose } = require("mongoose");
 
 // Define Task schema
@@ -9,8 +10,7 @@ const taskSchema = new mongoose.Schema({
     assigneeUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user
     dueDate: { type: Date },
     priority: { type: String },
-    //status: { type: String }, // To Do, In Progress, Done, etc.
-    attachments:[{ type: String}]
+    attachments:[{ type: String}],
 }, { timestamps: true });
 
 // Define Column schema

@@ -62,7 +62,7 @@ const mongoose=require("mongoose")
 exports.addTaskToProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
-        const { taskName, content, columnId, assigneeUserID, dueDate, priority, status } = req.body;
+        const { taskName, content, columnId, assigneeUserID, dueDate, priority } = req.body;
 
         // Validate priority and status
         const validPriorities = ['Low', 'Medium', 'High'];
@@ -110,7 +110,9 @@ exports.addTaskToProject = async (req, res) => {
             content,
             assigneeUserID: assigneeUserID ? assigneeUserID : null,
             dueDate,
-            priority
+            priority,
+            status: columnId, // To Do, In Progress, Done, etc.
+
         };
 
         // Add the new task to the project's tasks array
@@ -180,7 +182,7 @@ exports.updateTaskInProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
         const taskId = req.params.taskId;
-        const { taskName, content } = req.body;
+        const { taskName, content,assignees,priority,dueDate,comment } = req.body;
 
         // Find the project by ID
         const project = await Project.findById(projectId);
@@ -199,7 +201,9 @@ exports.updateTaskInProject = async (req, res) => {
         // Update the task with the new data
         if (taskName) task.taskName = taskName;
         if (content) task.content = content;
-
+        if (assignees) task.assigneeUserID=assignees;
+        if(priority) task.priority=priority;
+        if(dueDate) task.dueDate=dueDate;
         // Save the project with the updated task
         await project.save();
 
