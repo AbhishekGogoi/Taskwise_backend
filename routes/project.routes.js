@@ -8,7 +8,7 @@ module.exports = (app) => {
     // Create a new Project
     router.post("/projects", project.create);
 
-    //Get a project by id
+    // Get a project by id
     router.get("/projects/:id", project.getProjectById);
 
     // Update a project by ID

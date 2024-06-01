@@ -17,6 +17,13 @@ module.exports = (mongoose) => {
         type: String,
         required: true,
       },
+      imgUrl: {  // Add imgUrl field with default value
+        type: String,
+        default: function() {
+          // Construct the default imgUrl using the username
+          return `https://ui-avatars.com/api/?name=${this.username}&background=random`;
+        }
+      },
     },
     { timestamps: true }
   );
@@ -26,6 +33,6 @@ module.exports = (mongoose) => {
     return object;
   });
 
-  const User = (module.exports = mongoose.model("User", schema));
+  const User = mongoose.model("User", schema); // Simplify the export
   return User;
 };
