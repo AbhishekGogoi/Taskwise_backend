@@ -1,5 +1,6 @@
 module.exports = (app) => {
-  const passport = require("passport");
+  const passport = require("../utils/passport");
+  // const passport = require("passport");
 
   const {
     registerUser,
@@ -23,12 +24,12 @@ module.exports = (app) => {
   router.post("/auth/logout", signOutUser);
 
   //Google OAuth routes
-  router.post(
+  router.get(
     "/auth/google",
     passport.authenticate("google", { scope: ["profile", "email"] })
   );
 
-  router.post(
+  router.get(
     "/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/" }),
     (req, res) => {
