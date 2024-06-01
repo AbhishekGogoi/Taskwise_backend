@@ -7,6 +7,7 @@ module.exports = (app) => {
     signOutUser,
     forgotPassword,
     verifyResetCode,
+    resendOTP,
     resetPassword,
   } = require("../controllers/auth.controller.js");
 
@@ -40,10 +41,13 @@ module.exports = (app) => {
   router.post("/auth/forgotpassword", forgotPassword);
 
   // Route to handle verification of the reset code
-  router.post("/auth/forgotpassword/verification", verifyResetCode);
+  router.post("/auth/verification", verifyResetCode);
+
+  // Route to handle resending the OTP
+  router.post("/auth/resendotp", resendOTP);
 
   // Route to handle resetting the password
-  router.post("/auth/forgotpassword/resetpassword", resetPassword);
+  router.post("/auth/resetpassword", resetPassword);
 
   app.use("/api", router);
 };

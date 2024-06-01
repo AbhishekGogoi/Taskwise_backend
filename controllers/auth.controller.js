@@ -224,7 +224,6 @@ module.exports = {
    */
 
   signOutUser: (req, res) => {
-    console.log("Enter into signout");
     try {
       req.logout((err) => {
         if (err) {
@@ -366,6 +365,41 @@ module.exports = {
       res
         .status(500)
         .json({ message: "Error verifying reset code", error: err.message });
+    }
+  },
+
+  // Resend OTP
+  resendOTP: async (req, res) => {
+    const { email } = req.body;
+    try {
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Generate a new 4-digit code
+      const code = generateCode();
+      user.resetCode = code;
+      user.resetCodeExpiry = Date.now() + 3600000; // Code valid for 1 hour
+      await user.save();
+
+      // Send the code to the user's email
+      const mailOptions = {
+        from: process.env.SENDER_EMAIL,
+        to: user.email,
+        subject: "Password Reset Code",
+        text: `Your new password reset code is: ${code}`,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res
+        .status(200)
+        .json({ message: "Reset code resent to email", email: email });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error resending reset code", error: err.message });
     }
   },
 
