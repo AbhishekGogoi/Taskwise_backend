@@ -133,11 +133,24 @@ exports.getWorkspaceMembers = async (req, res) => {
         if (!isValidObjectId(workspaceId)) {
             return res.status(400).send({ message: "Invalid workspace ID" });
         }
-        const workspace = await Workspace.findById(workspaceId);
+        const workspace = await Workspace.findById(workspaceId).populate({
+            path: 'members.user', // Populate the 'user' field in the 'members' array
+            select: 'imgUrl' // Select the 'imgUrl' field from the 'User' model
+        });
         if (!workspace) {
             return res.status(404).send({ message: "Workspace not found" });
         }
-        res.status(200).send(workspace.members);
+        
+        // Extract imgUrl from populated members
+        const membersWithImgUrl = workspace.members.map(member => ({
+            user: member.user,
+            role: member.role,
+            isActive: member.isActive,
+            joinedAt: member.joinedAt,
+            deactivatedAt: member.deactivatedAt,
+        }));
+
+        res.status(200).send(membersWithImgUrl);
     } catch (err) {
         console.error("Error retrieving workspace members:", err);
         res.status(500).send({ message: "Error retrieving workspace members" });
@@ -165,7 +178,17 @@ exports.getWorkspaceMembers = async (req, res) => {
  *             schema:
  *               type: array
  *               items:
- *                 type: string
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     description: The ID of the project
+ *                   name:
+ *                     type: string
+ *                     description: The name of the project
+ *                   imgurl:
+ *                     type: string
+ *                     description: The URL of the project image
  *       404:
  *         description: Workspace not found
  *       500:
@@ -177,14 +200,14 @@ exports.getWorkspaceProjects = async (req, res) => {
         if (!isValidObjectId(workspaceId)) {
             return res.status(400).send({ message: "Invalid workspace ID" });
         }
-        const workspace = await Workspace.findById(workspaceId);
+        const workspace = await Workspace.findById(workspaceId).populate('projects', 'id name imgUrl');
         if (!workspace) {
             return res.status(404).send({ message: "Workspace not found" });
         }
         res.status(200).send(workspace.projects);
     } catch (err) {
-        console.error("Error retrieving workspace projects:", err);
-        res.status(500).send({ message: "Error retrieving workspace projects" });
+        console.error("Error retrieving workspace tasks:", err);
+        res.status(500).send({ message: "Error retrieving workspace tasks" });
     }
 };
 
@@ -221,11 +244,33 @@ exports.getWorkspaceTasks = async (req, res) => {
         if (!isValidObjectId(workspaceId)) {
             return res.status(400).send({ message: "Invalid workspace ID" });
         }
-        const workspace = await Workspace.findById(workspaceId);
+        const workspace = await Workspace.findById(workspaceId).populate('projects');
         if (!workspace) {
             return res.status(404).send({ message: "Workspace not found" });
         }
-        res.status(200).send(workspace.tasks);
+        
+        // Array to hold all tasks
+        let allTasks = [];
+        
+        // Iterate over each project in the workspace
+        workspace.projects.forEach(project => {
+            // Iterate over each task in the project
+            project.tasks.forEach(task => {
+                // Extract relevant task details and add projectName
+                const taskDetails = {
+                    id: task._id,
+                    name: task.taskName,
+                    dueDate: task.dueDate,
+                    priority: task.priority,
+                    status: task.status,
+                    project: project.name // Add projectName from the project
+                };
+                // Push task details to allTasks array
+                allTasks.push(taskDetails);
+            });
+        });
+
+        res.status(200).send(allTasks);
     } catch (err) {
         console.error("Error retrieving workspace tasks:", err);
         res.status(500).send({ message: "Error retrieving workspace tasks" });

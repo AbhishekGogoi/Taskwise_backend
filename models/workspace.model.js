@@ -6,16 +6,16 @@ module.exports = mongoose => {
         description: { type: String },
         imgUrl: { type: String, required: true, default: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb'},
         projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
-        creatorUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        creatorUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Ensure required
         isActive: { type: Boolean, default: true },
         deactivatedAt: { type: Date },
         members: [{
-            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
             role: { type: String, enum: ['Admin', 'Member'], required: true },
             isActive: { type: Boolean, default: true },
             joinedAt: { type: Date, default: Date.now },
-            deactivatedAt: { type: Date }
-        }]
+            deactivatedAt: { type: Date },
+        }],
     }, { timestamps: true });
 
     workspaceSchema.method("toJSON", function () {

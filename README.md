@@ -29,6 +29,10 @@ Create a .env file in the root directory and add the following variables:
 PORT=8080
 MONGODB_URI=mongodb://localhost:27017/taskwise 
 Adjust the PORT and MONGODB_URI values as needed.
+AWS_ACCESS_KEY_ID = ""
+AWS_SECRET_ACCESS_KEY = ""
+S3_REGION = ""
+S3_BUCKET = ""
 
 4. **Start the server:**
 npm start

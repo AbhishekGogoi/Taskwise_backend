@@ -7,8 +7,8 @@ const User = db.user;
  * /api/workspaces:
  *   post:
  *     summary: Create a new workspace
- *     tags:                          
- *       - Workspace   
+ *     tags:
+ *       - Workspace
  *     requestBody:
  *       required: true
  *       content:
@@ -22,13 +22,21 @@ const User = db.user;
  *                 type: string
  *               imgUrl:
  *                 type: string
- *               creatorUserId:
+ *               creatorUserID:
  *                 type: string
+ *               memberEmails:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of email addresses of members to be added to the workspace
  *             example:
  *               name: "Unique Workspace Name"
  *               description: "Workspace Description"
  *               imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
  *               creatorUserID: "UserId"
+ *               memberEmails:
+ *                 - "email1@example.com"
+ *                 - "email2@example.com"
  *     responses:
  *       200:
  *         description: Workspace created successfully
@@ -37,55 +45,72 @@ const User = db.user;
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
+ *                 workspace:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     imgUrl:
+ *                       type: string
+ *                     creatorUserID:
+ *                       type: string
+ *                     isActive:
+ *                       type: boolean
+ *                     members:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           user:
+ *                             type: string
+ *                           role:
+ *                             type: string
+ *                           status:
+ *                             type: string
+ *                 memberStatus:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       email:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                 message:
  *                   type: string
- *                 name:
- *                   type: string
- *                 description:
- *                   type: string
- *                 imgUrl:
- *                   type: string
+ *             example:
+ *               workspace:
+ *                 _id: "workspaceId"
+ *                 name: "Workspace Name"
+ *                 description: "Workspace Description"
+ *                 imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+ *                 creatorUserID: "creatorUserId"
+ *                 isActive: true
+ *                 members:
+ *                   - user: "creatorUserId"
+ *                     role: "Admin"
+ *                   - user: "memberUserId"
+ *                     role: "Member"
+ *                     status: "Added"
+ *               memberStatus:
+ *                 - email: "member@example.com"
+ *                   status: "Added"
+ *                 - email: "notfound@example.com"
+ *                   status: "Not Found"
+ *               message: "Workspace created successfully"
  *       400:
  *         description: Bad request
- *       500:
- *         description: Internal server error
- * 
- *   get:
- *     summary: Get all workspaces
- *     tags:
- *       - Workspace
- *     parameters:
- *       - in: query
- *         name: isActive
- *         schema:
- *           type: string
- *           enum: [true, false]
- *         description: Filter workspaces by activity status. If not provided, active workspaces will be returned by default.
- *     responses:
- *       200:
- *         description: A list of workspaces
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   imgUrl:
- *                     type: string
  *       500:
  *         description: Internal server error
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, imgUrl, creatorUserID } = req.body;
-        
+        const { name, description, imgUrl, creatorUserID, memberEmails } = req.body;
+
         if (!name) {
             return res.status(400).send({ message: "Name field is required" });
         }
@@ -94,11 +119,26 @@ exports.create = async (req, res) => {
             return res.status(400).send({ message: "Please enter the creator User ID" });
         }
 
-        const user = await User.findById(creatorUserID );
+        const user = await User.findById(creatorUserID);
 
         if (!user) {
             return res.status(404).send({ message: "User not found" });
         }
+
+        const members = [{ user: user._id, role: 'Admin' }];
+        const memberStatus = [];
+
+        const memberPromises = memberEmails.map(async (email) => {
+            const member = await User.findOne({ email });
+            if (member) {
+                members.push({ user: member._id, role: 'Member', status: 'Added' });
+                memberStatus.push({ email, status: 'Added' });
+            } else {
+                memberStatus.push({ email, status: 'Not Found' });
+            }
+        });
+
+        await Promise.all(memberPromises);
 
         const workspace = new Workspace({
             name,
@@ -106,16 +146,19 @@ exports.create = async (req, res) => {
             imgUrl,
             creatorUserID: user._id,
             isActive: true,
-            members: [{ 
-                user: user._id, 
-                role: 'Admin' }] // Adding creator as an admin
+            members
         });
 
         const savedWorkspace = await workspace.save();
-        res.status(200).send(savedWorkspace);
+
+        res.status(200).send({ 
+            workspace: savedWorkspace, 
+            memberStatus,
+            message: "Workspace created successfully" 
+        });
     } catch (err) {
         console.error("Error creating workspace:", err);
-        res.status(500).send({ message: "Error creating workspace" + err });
+        res.status(500).send({ message: "Error creating workspace: " + err.message });
     }
 };
 
