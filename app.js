@@ -1,10 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-// const cookieSession = require("cookie-session");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const passport = require("passport");
 const passportSetup = require("./utils/passport");
+require("dotenv").config();
 
 const app = express();
 const db = require("./models");
@@ -24,17 +24,9 @@ app.use(express.json());
 // use of cookieParser
 app.use(cookieParser());
 
-// app.use(
-//   cookieSession({
-//     name: "session",
-//     keys: ["cyberwolve"],
-//     maxAge: 24 * 60 * 60 * 100,
-//   })
-// );
-
 app.use(
   session({
-    secret: "taskwise_secret", // Use a strong secret key in production
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false }, // Set secure to true in production when using HTTPS

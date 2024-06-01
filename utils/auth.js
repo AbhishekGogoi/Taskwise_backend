@@ -21,6 +21,7 @@
 // };
 
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const ensureAuthenticated = (req, res, next) => {
   const token = req.cookies.access_token; // Extract the token from cookies
@@ -30,7 +31,7 @@ const ensureAuthenticated = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Attach the decoded user information to the request
     return next();
   } catch (err) {

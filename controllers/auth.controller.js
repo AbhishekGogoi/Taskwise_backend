@@ -180,7 +180,7 @@ module.exports = {
         username: user.username,
         email: user.email,
       };
-      const jwtToken = jwt.sign(tokenObject, process.env.SECRET, {
+      const jwtToken = jwt.sign(tokenObject, process.env.JWT_SECRET, {
         expiresIn: "1h",
       }); //1 hour
 
@@ -264,7 +264,7 @@ module.exports = {
 
       if (user) {
         // User already exists, generate JWT token and send response
-        const token = jwt.sign({ id: user._id }, process.env.SECRET);
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
         const { password, ...userData } = user.toObject();
         const expiryDate = new Date(Date.now() + 3600000); // 1 hour
         if (res && res.cookie) {
@@ -292,7 +292,7 @@ module.exports = {
           password: hashedPassword,
         });
         await newUser.save();
-        const token = jwt.sign({ id: newUser._id }, process.env.SECRET);
+        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
         const { password, ...userData } = newUser.toObject();
         const expiryDate = new Date(Date.now() + 3600000); // 1 hour
         if (res && res.cookie) {
