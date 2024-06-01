@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// // Function to generate a random 4-digit code for forgot passowrd
+// Function to generate a random 4-digit code for forgot passowrd
 function generateCode() {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
@@ -309,7 +309,57 @@ module.exports = {
     }
   },
 
-  // Forgot Password
+  /**
+   * @swagger
+   * /api/auth/forgotpassword:
+   *   post:
+   *     summary: Request a password reset code
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *             properties:
+   *               email:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Reset code sent to email
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 email:
+   *                   type: string
+   *       404:
+   *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 error:
+   *                   type: string
+   */
+
   forgotPassword: async (req, res) => {
     const { email } = req.body;
     try {
@@ -321,7 +371,7 @@ module.exports = {
       // Generate a 4-digit code
       const code = generateCode();
       user.resetCode = code;
-      user.resetCodeExpiry = Date.now() + 3600000; // Code valid for 1 hour
+      user.resetCodeExpiry = Date.now() + 600000; // Code valid for 10 minutes
       await user.save();
 
       // Send the code to the user's email
@@ -344,7 +394,67 @@ module.exports = {
     }
   },
 
-  // Verify Reset Code
+  /**
+   * @swagger
+   * /api/auth/verification:
+   *   post:
+   *     summary: Verify a password reset code
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - code
+   *             properties:
+   *               email:
+   *                 type: string
+   *               code:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Reset code verified
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       400:
+   *         description: Invalid or expired reset code
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       404:
+   *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 error:
+   *                   type: string
+   */
+
   verifyResetCode: async (req, res) => {
     const { email, code } = req.body;
     try {
@@ -368,7 +478,57 @@ module.exports = {
     }
   },
 
-  // Resend OTP
+  /**
+   * @swagger
+   * /api/auth/resendotp:
+   *   post:
+   *     summary: Resend the password reset code
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *             properties:
+   *               email:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Reset code resent to email
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 email:
+   *                   type: string
+   *       404:
+   *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 error:
+   *                   type: string
+   */
+
   resendOTP: async (req, res) => {
     const { email } = req.body;
     try {
@@ -380,7 +540,7 @@ module.exports = {
       // Generate a new 4-digit code
       const code = generateCode();
       user.resetCode = code;
-      user.resetCodeExpiry = Date.now() + 3600000; // Code valid for 1 hour
+      user.resetCodeExpiry = Date.now() + 600000; // Code valid for 10 minutes
       await user.save();
 
       // Send the code to the user's email
@@ -403,7 +563,70 @@ module.exports = {
     }
   },
 
-  // Reset Password
+  /**
+   * @swagger
+   * /api/auth/resetpassword:
+   *   post:
+   *     summary: Reset the user's password
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - code
+   *               - newPassword
+   *             properties:
+   *               email:
+   *                 type: string
+   *               code:
+   *                 type: string
+   *               newPassword:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Password reset successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       400:
+   *         description: Invalid or expired reset code
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       404:
+   *         description: User not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                 error:
+   *                   type: string
+   */
+
   resetPassword: async (req, res) => {
     const { email, code, newPassword } = req.body;
     try {
