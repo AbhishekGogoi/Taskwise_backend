@@ -10,10 +10,10 @@ const swaggerJsDoc = require("swagger-jsdoc");
 const uploadController = require("./controllers/upload.controller");
 const db = require("./models");
 
-const app = express();
+
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000" }));
+
 app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -76,7 +76,7 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-const PORT = process.env.PORT || 8080;
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`TaskWise Server is running on port ${PORT}`);
