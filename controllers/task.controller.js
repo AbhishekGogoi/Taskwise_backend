@@ -111,7 +111,7 @@ exports.addTaskToProject = async (req, res) => {
             assigneeUserID: assigneeUserID ? assigneeUserID : null,
             dueDate,
             priority,
-            status: columnId, // To Do, In Progress, Done, etc.
+            //status: columnId, // To Do, In Progress, Done, etc.
 
         };
 

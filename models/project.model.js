@@ -11,7 +11,7 @@ const taskSchema = new mongoose.Schema({
     dueDate: { type: Date },
     priority: { type: String },
     attachments:[{ type: String}],
-    status:{type:mongoose.Schema.Types.ObjectId,ref: 'Column'}
+    //status:{type:mongoose.Schema.Types.ObjectId,ref: 'Column'}
 }, { timestamps: true });
 
 // Define Column schema
