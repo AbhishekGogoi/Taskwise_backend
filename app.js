@@ -1,24 +1,19 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
-const passport = require("passport");
-const passportSetup = require("./utils/passport");
-require("dotenv").config();
+const passport = require("./utils/passport");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsDoc = require("swagger-jsdoc");
 
-const app = express();
+const uploadController = require("./controllers/upload.controller");
 const db = require("./models");
 
-var corsOptions = {
-  origin: "http://localhost:3000",
-};
+const app = express();
 
-app.use(cors(corsOptions));
-
-// parse requests of content-type - application/x-www-form-urlencoded
+app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.urlencoded({ extended: true }));
-
-// parse requests of content-type - application/json
 app.use(express.json());
 
 // use of cookieParser
@@ -36,24 +31,33 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// MongoDB connection
+if (
+  !process.env.AWS_ACCESS_KEY_ID ||
+  !process.env.AWS_SECRET_ACCESS_KEY ||
+  !process.env.S3_BUCKET ||
+  !process.env.MONGODB_URL
+) {
+  console.error("Environment variables not set properly.");
+  process.exit(1);
+}
+
 db.mongoose
-  .connect(db.url, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => {
-    console.log(err);
-    process.exit();
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
   });
 
+app.use("/api/upload", uploadController);
 // Import routes
 require("./routes/project.routes")(app);
 require("./routes/workspace.routes")(app);
 require("./routes/auth.routes")(app);
 
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsDoc = require("swagger-jsdoc");
-
-// Swagger configuration
 const swaggerOptions = {
   swaggerDefinition: {
     openapi: "3.0.0",
@@ -63,20 +67,15 @@ const swaggerOptions = {
       description:
         "TaskWise is a task management API that allows users to manage workspaces, projects, tasks efficiently.",
     },
-    servers: [
-      {
-        url: "http://localhost:8080",
-      },
-    ],
+    servers: [{ url: "http://localhost:8080" }],
   },
-  apis: ["./controllers/*.js"], // Path to the API docs
+  apis: ["./controllers/*.js", "./routes/*.js"],
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Define port and start server
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`TaskWise Server is running on port ${PORT}`);
 });
