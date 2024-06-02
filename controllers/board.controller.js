@@ -482,7 +482,7 @@ exports.moveTaskToAnotherColumn = async (req, res) => {
         // Save the updated project
         await project.save();
 
-        res.status(200).json({ message: "Task moved successfully", project });
+        res.status(200).json({project });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal Server Error" });
