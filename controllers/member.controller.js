@@ -418,7 +418,8 @@ exports.getAllProjectsByUserId = async (req, res) => {
                 id: project._id,
                 name: project.name,
                 imgUrl: project.imgUrl,
-                workspaceName: workspace.name
+                workspaceName: workspace.name,
+                workspaceId: workspace._id
             }));
         });
 

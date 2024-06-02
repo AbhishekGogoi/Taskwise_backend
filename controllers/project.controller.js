@@ -108,7 +108,7 @@ const mongoose=require("mongoose")
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, workspaceID, order, columns, tasks, creatorUserID } = req.body;
+        const { name, description, workspaceID, order, columns, tasks, creatorUserID,imgUrl } = req.body;
         if (!creatorUserID) {
             return res.status(400).send({ message: "Please enter the creator details" });
         }
@@ -151,7 +151,8 @@ exports.create = async (req, res) => {
             creatorUserID: creatorUserID,
             order,
             columns: defaultColumns,
-            tasks
+            tasks,
+            imgUrl
         });
 
         const savedProject = await project.save();
