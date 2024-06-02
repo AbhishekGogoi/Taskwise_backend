@@ -124,11 +124,22 @@ exports.addMemberToWorkspace = async (req, res) => {
  *               items:
  *                 type: object
  *                 properties:
- *                   userID:
- *                     type: string
+ *                   user:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       imgUrl:
+ *                         type: string
  *                   role:
  *                     type: string
+ *                   isActive:
+ *                     type: boolean
  *                   joinedAt:
+ *                     type: string
+ *                   deactivatedAt:
  *                     type: string
  *       404:
  *         description: Workspace not found
@@ -143,22 +154,26 @@ exports.getWorkspaceMembers = async (req, res) => {
         }
         const workspace = await Workspace.findById(workspaceId).populate({
             path: 'members.user', // Populate the 'user' field in the 'members' array
-            select: 'imgUrl' // Select the 'imgUrl' field from the 'User' model
+            select: '_id email imgUrl' // Select the 'email' and 'imgUrl' fields from the 'User' model
         });
         if (!workspace) {
             return res.status(404).send({ message: "Workspace not found" });
         }
         
-        // Extract imgUrl from populated members
-        const membersWithImgUrl = workspace.members.map(member => ({
-            user: member.user,
+        // Extract imgUrl and email from populated members
+        const membersWithImgUrlAndEmail = workspace.members.map(member => ({
+            user: {
+                id: member.user._id,
+                email: member.user.email,
+                imgUrl: member.user.imgUrl
+            },
             role: member.role,
             isActive: member.isActive,
             joinedAt: member.joinedAt,
             deactivatedAt: member.deactivatedAt,
         }));
 
-        res.status(200).send(membersWithImgUrl);
+        res.status(200).send(membersWithImgUrlAndEmail);
     } catch (err) {
         console.error("Error retrieving workspace members:", err);
         res.status(500).send({ message: "Error retrieving workspace members" });
@@ -426,7 +441,8 @@ exports.getAllProjectsByUserId = async (req, res) => {
                 id: project._id,
                 name: project.name,
                 imgUrl: project.imgUrl,
-                workspaceName: workspace.name
+                workspaceName: workspace.name,
+                workspaceId: workspace._id
             }));
         });
 
