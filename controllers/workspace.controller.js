@@ -18,12 +18,16 @@ const User = db.user;
  *             properties:
  *               name:
  *                 type: string
+ *                 description: Name of the workspace
  *               description:
  *                 type: string
+ *                 description: Description of the workspace
  *               imgUrl:
  *                 type: string
+ *                 description: URL of the workspace image
  *               creatorUserID:
  *                 type: string
+ *                 description: ID of the user creating the workspace
  *               memberEmails:
  *                 type: array
  *                 items:
@@ -50,16 +54,22 @@ const User = db.user;
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: ID of the workspace
  *                     name:
  *                       type: string
+ *                       description: Name of the workspace
  *                     description:
  *                       type: string
+ *                       description: Description of the workspace
  *                     imgUrl:
  *                       type: string
+ *                       description: URL of the workspace image
  *                     creatorUserID:
  *                       type: string
+ *                       description: ID of the user who created the workspace
  *                     isActive:
  *                       type: boolean
+ *                       description: Status indicating if the workspace is active
  *                     members:
  *                       type: array
  *                       items:
@@ -67,10 +77,13 @@ const User = db.user;
  *                         properties:
  *                           user:
  *                             type: string
+ *                             description: ID of the user
  *                           role:
  *                             type: string
+ *                             description: Role of the user in the workspace
  *                           status:
  *                             type: string
+ *                             description: Status of the user in the workspace
  *                 memberStatus:
  *                   type: array
  *                   items:
@@ -78,10 +91,13 @@ const User = db.user;
  *                     properties:
  *                       email:
  *                         type: string
+ *                         description: Email address of the member
  *                       status:
  *                         type: string
+ *                         description: Status indicating if the member was added or not found
  *                 message:
  *                   type: string
+ *                   description: Success message
  *             example:
  *               workspace:
  *                 _id: "workspaceId"
@@ -93,6 +109,7 @@ const User = db.user;
  *                 members:
  *                   - user: "creatorUserId"
  *                     role: "Admin"
+ *                     status: "Added"
  *                   - user: "memberUserId"
  *                     role: "Member"
  *                     status: "Added"
@@ -104,12 +121,32 @@ const User = db.user;
  *               message: "Workspace created successfully"
  *       400:
  *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message describing why the request was invalid
+ *             example:
+ *               message: "Name field is required"
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message describing the internal server error
+ *             example:
+ *               message: "Error creating workspace: detailed error message"
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, imgUrl, creatorUserID, memberEmails } = req.body;
+        const { name, description, imgUrl, creatorUserID, memberEmails = [] } = req.body;
 
         if (!name) {
             return res.status(400).send({ message: "Name field is required" });
@@ -128,17 +165,19 @@ exports.create = async (req, res) => {
         const members = [{ user: user._id, role: 'Admin' }];
         const memberStatus = [];
 
-        const memberPromises = memberEmails.map(async (email) => {
-            const member = await User.findOne({ email });
-            if (member) {
-                members.push({ user: member._id, role: 'Member', status: 'Added' });
-                memberStatus.push({ email, status: 'Added' });
-            } else {
-                memberStatus.push({ email, status: 'Not Found' });
-            }
-        });
+        if (memberEmails.length > 0) {
+            const memberPromises = memberEmails.map(async (email) => {
+                const member = await User.findOne({ email });
+                if (member) {
+                    members.push({ user: member._id, role: 'Member', status: 'Added' });
+                    memberStatus.push({ email, status: 'Added' });
+                } else {
+                    memberStatus.push({ email, status: 'Not Found' });
+                }
+            });
 
-        await Promise.all(memberPromises);
+            await Promise.all(memberPromises);
+        }
 
         const workspace = new Workspace({
             name,
