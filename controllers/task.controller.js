@@ -72,9 +72,9 @@ exports.addTaskToProject = async (req, res) => {
             return res.status(400).json({ message: `Invalid priority value. Allowed values are: ${validPriorities.join(', ')}` });
         }
 
-        if (status && !validStatuses.includes(status)) {
-            return res.status(400).json({ message: `Invalid status value. Allowed values are: ${validStatuses.join(', ')}` });
-        }
+        // if (status && !validStatuses.includes(status)) {
+        //     return res.status(400).json({ message: `Invalid status value. Allowed values are: ${validStatuses.join(', ')}` });
+        // }
 
         // Find the project by ID
         const project = await Project.findById(projectId);
