@@ -162,14 +162,14 @@ exports.create = async (req, res) => {
             return res.status(404).send({ message: "User not found" });
         }
 
-        const members = [{ user: user._id, role: 'Admin' }];
+        const members = [{ user: user._id, role: 'Admin', _id: user._id }];
         const memberStatus = [];
 
         if (memberEmails.length > 0) {
             const memberPromises = memberEmails.map(async (email) => {
                 const member = await User.findOne({ email });
                 if (member) {
-                    members.push({ user: member._id, role: 'Member', status: 'Added' });
+                    members.push({ user: member._id, role: 'Member', status: 'Added', _id: member._id });
                     memberStatus.push({ email, status: 'Added' });
                 } else {
                     memberStatus.push({ email, status: 'Not Found' });
