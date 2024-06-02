@@ -136,20 +136,33 @@ exports.addMemberToWorkspace = async (req, res) => {
  *         description: Internal server error
  */
 exports.getWorkspaceMembers = async (req, res) => {
-  try {
-    const { workspaceId } = req.params;
-    if (!isValidObjectId(workspaceId)) {
-      return res.status(400).send({ message: "Invalid workspace ID" });
+    try {
+        const { workspaceId } = req.params;
+        if (!isValidObjectId(workspaceId)) {
+            return res.status(400).send({ message: "Invalid workspace ID" });
+        }
+        const workspace = await Workspace.findById(workspaceId).populate({
+            path: 'members.user', // Populate the 'user' field in the 'members' array
+            select: 'imgUrl' // Select the 'imgUrl' field from the 'User' model
+        });
+        if (!workspace) {
+            return res.status(404).send({ message: "Workspace not found" });
+        }
+        
+        // Extract imgUrl from populated members
+        const membersWithImgUrl = workspace.members.map(member => ({
+            user: member.user,
+            role: member.role,
+            isActive: member.isActive,
+            joinedAt: member.joinedAt,
+            deactivatedAt: member.deactivatedAt,
+        }));
+
+        res.status(200).send(membersWithImgUrl);
+    } catch (err) {
+        console.error("Error retrieving workspace members:", err);
+        res.status(500).send({ message: "Error retrieving workspace members" });
     }
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).send({ message: "Workspace not found" });
-    }
-    res.status(200).send(workspace.members);
-  } catch (err) {
-    console.error("Error retrieving workspace members:", err);
-    res.status(500).send({ message: "Error retrieving workspace members" });
-  }
 };
 
 /**
@@ -173,27 +186,37 @@ exports.getWorkspaceMembers = async (req, res) => {
  *             schema:
  *               type: array
  *               items:
- *                 type: string
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     description: The ID of the project
+ *                   name:
+ *                     type: string
+ *                     description: The name of the project
+ *                   imgurl:
+ *                     type: string
+ *                     description: The URL of the project image
  *       404:
  *         description: Workspace not found
  *       500:
  *         description: Internal server error
  */
 exports.getWorkspaceProjects = async (req, res) => {
-  try {
-    const { workspaceId } = req.params;
-    if (!isValidObjectId(workspaceId)) {
-      return res.status(400).send({ message: "Invalid workspace ID" });
+    try {
+        const { workspaceId } = req.params;
+        if (!isValidObjectId(workspaceId)) {
+            return res.status(400).send({ message: "Invalid workspace ID" });
+        }
+        const workspace = await Workspace.findById(workspaceId).populate('projects', 'id name imgUrl');
+        if (!workspace) {
+            return res.status(404).send({ message: "Workspace not found" });
+        }
+        res.status(200).send(workspace.projects);
+    } catch (err) {
+        console.error("Error retrieving workspace tasks:", err);
+        res.status(500).send({ message: "Error retrieving workspace tasks" });
     }
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).send({ message: "Workspace not found" });
-    }
-    res.status(200).send(workspace.projects);
-  } catch (err) {
-    console.error("Error retrieving workspace projects:", err);
-    res.status(500).send({ message: "Error retrieving workspace projects" });
-  }
 };
 
 /**
@@ -224,20 +247,42 @@ exports.getWorkspaceProjects = async (req, res) => {
  *         description: Internal server error
  */
 exports.getWorkspaceTasks = async (req, res) => {
-  try {
-    const { workspaceId } = req.params;
-    if (!isValidObjectId(workspaceId)) {
-      return res.status(400).send({ message: "Invalid workspace ID" });
+    try {
+        const { workspaceId } = req.params;
+        if (!isValidObjectId(workspaceId)) {
+            return res.status(400).send({ message: "Invalid workspace ID" });
+        }
+        const workspace = await Workspace.findById(workspaceId).populate('projects');
+        if (!workspace) {
+            return res.status(404).send({ message: "Workspace not found" });
+        }
+        
+        // Array to hold all tasks
+        let allTasks = [];
+        
+        // Iterate over each project in the workspace
+        workspace.projects.forEach(project => {
+            // Iterate over each task in the project
+            project.tasks.forEach(task => {
+                // Extract relevant task details and add projectName
+                const taskDetails = {
+                    id: task._id,
+                    name: task.taskName,
+                    dueDate: task.dueDate,
+                    priority: task.priority,
+                    status: task.status,
+                    project: project.name // Add projectName from the project
+                };
+                // Push task details to allTasks array
+                allTasks.push(taskDetails);
+            });
+        });
+
+        res.status(200).send(allTasks);
+    } catch (err) {
+        console.error("Error retrieving workspace tasks:", err);
+        res.status(500).send({ message: "Error retrieving workspace tasks" });
     }
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).send({ message: "Workspace not found" });
-    }
-    res.status(200).send(workspace.tasks);
-  } catch (err) {
-    console.error("Error retrieving workspace tasks:", err);
-    res.status(500).send({ message: "Error retrieving workspace tasks" });
-  }
 };
 
 /**
@@ -295,13 +340,9 @@ exports.getAllWorkspacesByUserId = async (req, res) => {
       "members.isActive": true,
     });
 
-    if (workspaces.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No workspaces found for this user" });
-    }
-
-    // console.log("Workspaces found: ", workspaces.length);
+        if (workspaces.length === 0) {
+            return res.status(404).json({ message: "No workspaces found for this user" });
+        }
 
     // Map workspaces to the response format
     const response = workspaces.map((workspace) => ({
@@ -375,26 +416,19 @@ exports.getAllProjectsByUserId = async (req, res) => {
       "members.isActive": true,
     }).populate("projects");
 
-    if (workspaces.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No workspaces or projects found for this user" });
-    }
+        if (workspaces.length === 0) {
+            return res.status(404).json({ message: "No workspaces or projects found for this user" });
+        }
 
-    // console.log("Workspaces found: ", workspaces.length);
-
-    // Collect and map all projects from the found workspaces
-    const projects = workspaces.flatMap((workspace) => {
-      // console.log(`Workspace: ${workspace.name}, Projects: ${workspace.projects.length}`);
-      return workspace.projects.map((project) => ({
-        id: project._id,
-        name: project.name,
-        imgUrl: project.imgUrl,
-        workspaceName: workspace.name,
-      }));
-    });
-
-    // console.log("Total projects collected: ", projects.length);
+        // Collect and map all projects from the found workspaces
+        const projects = workspaces.flatMap(workspace => {
+            return workspace.projects.map(project => ({
+                id: project._id,
+                name: project.name,
+                imgUrl: project.imgUrl,
+                workspaceName: workspace.name
+            }));
+        });
 
     // Respond with the list of projects
     res.status(200).json(projects);
@@ -474,32 +508,24 @@ exports.getAllTasksByUserId = async (req, res) => {
       },
     });
 
-    if (workspaces.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No workspaces or projects found for this user" });
-    }
+        if (workspaces.length === 0) {
+            return res.status(404).json({ message: "No workspaces or projects found for this user" });
+        }
 
-    // console.log("Workspaces found: ", workspaces.length);
-
-    // Collect and map all tasks from the found workspaces and projects
-    const tasks = workspaces.flatMap((workspace) => {
-      return workspace.projects.flatMap((project) => {
-        return project.tasks.map((task) => ({
-          id: task._id,
-          taskName: task.taskName,
-          dueDate: task.dueDate,
-          priority: task.priority,
-          status: task.status,
-          workspaceName: workspace.name,
-          projectName: project.name,
-        }));
-      });
-    });
-
-    // console.log("Total tasks collected: ", tasks.length);
-
-    // console.log("Total tasks collected: ", tasks);
+        // Collect and map all tasks from the found workspaces and projects
+        const tasks = workspaces.flatMap(workspace => {
+            return workspace.projects.flatMap(project => {
+                return project.tasks.map(task => ({
+                    id: task._id,
+                    taskName: task.taskName,
+                    dueDate: task.dueDate,
+                    priority: task.priority,
+                    status: task.status,
+                    workspaceName: workspace.name,
+                    projectName: project.name
+                }));
+            });
+        });
 
     // Respond with the list of tasks
     res.status(200).json(tasks);
