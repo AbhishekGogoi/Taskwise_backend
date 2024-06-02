@@ -17,12 +17,19 @@ module.exports = (mongoose) => {
         type: String,
         required: true,
       },
-      imgUrl: {  // Add imgUrl field with default value
+      imgUrl: {
+        // Add imgUrl field with default value
         type: String,
-        default: function() {
+        default: function () {
           // Construct the default imgUrl using the username
           return `https://ui-avatars.com/api/?name=${this.username}&background=random`;
-        }
+        },
+      },
+      resetCode: {
+        type: String,
+      },
+      resetCodeExpiry: {
+        type: Date,
       },
     },
     { timestamps: true }
