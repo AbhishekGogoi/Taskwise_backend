@@ -62,7 +62,7 @@ const mongoose=require("mongoose")
 exports.addTaskToProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
-        const { taskName, content, columnId, assigneeUserID, dueDate, priority,comments,createdBy } = req.body;
+        const { taskName, content, columnId, assigneeUserID, dueDate, priority,comments,createdBy,attachments } = req.body;
 
         // Validate priority and status
         const validPriorities = ['Low', 'Medium', 'High'];
@@ -120,7 +120,8 @@ exports.addTaskToProject = async (req, res) => {
             dueDate,
             priority,
             comments,
-            createdBy
+            createdBy,
+            attachments
             //status: columnId, // To Do, In Progress, Done, etc.
 
         };
