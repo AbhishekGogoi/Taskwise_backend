@@ -11,6 +11,11 @@ const taskSchema = new mongoose.Schema({
     dueDate: { type: Date },
     priority: { type: String },
     attachments:[{ type: String}],
+    comments: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user who made the comment
+        comment: { type: String }
+    }],
+    createdBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     //status:{type:mongoose.Schema.Types.ObjectId,ref: 'Column'}
 }, { timestamps: true });
 

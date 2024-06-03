@@ -62,7 +62,7 @@ const mongoose=require("mongoose")
 exports.addTaskToProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
-        const { taskName, content, columnId, assigneeUserID, dueDate, priority } = req.body;
+        const { taskName, content, columnId, assigneeUserID, dueDate, priority,comments,createdBy,attachments } = req.body;
 
         // Validate priority and status
         const validPriorities = ['Low', 'Medium', 'High'];
@@ -97,6 +97,14 @@ exports.addTaskToProject = async (req, res) => {
                 return res.status(400).json({ message: "Assignee must be a member of the workspace" });
             }
         }
+        if (createdBy) {
+            const isMember = workspace.members.some(member => 
+                member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
+            );
+            if (!isMember) {
+                return res.status(400).json({ message: "Assignee must be a member of the workspace" });
+            }
+        }
 
         // Find the column by ID within the project
         const column = project.columns.id(columnId);
@@ -111,6 +119,9 @@ exports.addTaskToProject = async (req, res) => {
             assigneeUserID: assigneeUserID ? assigneeUserID : null,
             dueDate,
             priority,
+            comments,
+            createdBy,
+            attachments
             //status: columnId, // To Do, In Progress, Done, etc.
 
         };
