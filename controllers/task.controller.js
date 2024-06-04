@@ -97,14 +97,14 @@ exports.addTaskToProject = async (req, res) => {
                 return res.status(400).json({ message: "Assignee must be a member of the workspace" });
             }
         }
-        if (createdBy) {
-            const isMember = workspace.members.some(member => 
-                member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
-            );
-            if (!isMember) {
-                return res.status(400).json({ message: "Assignee must be a member of the workspace" });
-            }
-        }
+        // if (createdBy) {
+        //     const isMember = workspace.members.some(member => 
+        //         member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
+        //     );
+        //     if (!isMember) {
+        //         return res.status(400).json({ message: "Assignee must be a member of the workspace" });
+        //     }
+        // }
 
         // Find the column by ID within the project
         const column = project.columns.id(columnId);

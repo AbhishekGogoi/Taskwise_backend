@@ -19,7 +19,11 @@ const taskSchema = new mongoose.Schema({
         },
         comment: { type: String }
     }],
-    createdBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    createdBy:{
+        _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+        username: { type: String},
+        email: { type: String }
+    }
     //status:{type:mongoose.Schema.Types.ObjectId,ref: 'Column'}
 }, { timestamps: true });
 
