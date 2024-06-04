@@ -12,7 +12,11 @@ const taskSchema = new mongoose.Schema({
     priority: { type: String },
     attachments:[{ type: String}],
     comments: [{
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user who made the comment
+        user: {
+            _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+            username: { type: String},
+            email: { type: String }
+        },
         comment: { type: String }
     }],
     createdBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }
