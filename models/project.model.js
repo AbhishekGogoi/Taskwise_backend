@@ -7,7 +7,11 @@ const taskSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true },
     deactivatedAt: { type: Date },
     content: { type: String },
-    assigneeUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user
+    assigneeUserID: {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+        username: { type: String},
+        email: { type: String }
+    }, // Reference to user
     dueDate: { type: Date },
     priority: { type: String },
     attachments:[{ type: String}],

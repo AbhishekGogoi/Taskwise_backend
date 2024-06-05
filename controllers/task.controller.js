@@ -193,7 +193,7 @@ exports.updateTaskInProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
         const taskId = req.params.taskId;
-        const { taskName, content,assignees,priority,dueDate,comments } = req.body;
+        const { taskName, content,assigneeUserID,priority,dueDate,comments } = req.body;
 
         // Find the project by ID
         const project = await Project.findById(projectId);
@@ -212,7 +212,7 @@ exports.updateTaskInProject = async (req, res) => {
         // Update the task with the new data
         if (taskName) task.taskName = taskName;
         if (content) task.content = content;
-        if (assignees) task.assigneeUserID=assignees;
+        if (assigneeUserID) task.assigneeUserID=assigneeUserID;
         if(priority) task.priority=priority;
         if(dueDate) task.dueDate=dueDate;
         if(comments) task.comments=comments;
