@@ -49,7 +49,10 @@ module.exports = {
    *                 type: string
    *               password:
    *                 type: string
-   *
+   *               imgKey:
+   *                 type: string
+   *               imgUrl:
+   *                 type: string
    *     responses:
    *       201:
    *         description: User registered successfully
@@ -85,7 +88,7 @@ module.exports = {
 
   registerUser: async (req, res) => {
     // Validate request body
-    const { username, email, password } = req.body;
+    const { username, email, password, imgKey, imgUrl } = req.body;
 
     // Check if user already exists
     const existingUser = await UserModel.findOne({ email });
@@ -94,7 +97,7 @@ module.exports = {
     }
 
     //2.create userModel
-    const userModel = new UserModel({ username, email, password });
+    const userModel = new UserModel({ username, email, password, imgKey, imgUrl });
     //3.do password encryption
     userModel.password = await bcrypt.hash(password, 10);
     //4.save data to mongodb

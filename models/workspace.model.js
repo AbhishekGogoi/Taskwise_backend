@@ -4,7 +4,8 @@ module.exports = mongoose => {
     const workspaceSchema = new mongoose.Schema({
         name: { type: String, required: true, unique: true },
         description: { type: String },
-        imgUrl: { type: String, required: true, default: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb' },
+        imgKey: { type: String, required: true},
+        imgUrl: { type: String, required: true, default: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb'},
         projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
         creatorUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Ensure required
         isActive: { type: Boolean, default: true },
