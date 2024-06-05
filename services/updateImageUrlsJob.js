@@ -2,7 +2,7 @@ const db = require("../models");
 const AWS = require('aws-sdk');
 require('dotenv').config();
 
-// Models
+// Models 
 const Project = db.project;
 const Workspace = db.workspace;
 const User = db.user;
@@ -20,7 +20,7 @@ const bucketName = process.env.S3_BUCKET;
 async function updateImageUrls() {
   console.log('updateImageUrls...');
   try {
-    // await updateCollection(User);
+    await updateCollection(User);
     await updateCollection(Workspace);
     // await updateCollection(Project);
     console.log("Image URLs updated successfully.");
