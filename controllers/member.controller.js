@@ -543,6 +543,59 @@ exports.getAllTasksByUserId = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/workspaces/{workspaceId}/members/{userId}/exit:
+ *   post:
+ *     summary: Deactivate a member from a workspace
+ *     tags: 
+ *       - Member
+ *     description: Deactivates a member from a workspace, setting their status to inactive
+ *     parameters:
+ *       - in: path
+ *         name: workspaceId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the workspace
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the user to deactivate
+ *     responses:
+ *       200:
+ *         description: Member deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Member deactivated successfully
+ *       404:
+ *         description: Workspace not found
+ *       500:
+ *         description: Error deactivating member
+ */
+exports.exitMember = async (req, res) => {
+    const { workspaceId, userId } = req.params;
+
+    try {
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: 'Workspace not found' });
+        }
+        
+        await workspace.exitMember(userId);
+        return res.status(200).json({ message: 'Member deactivated successfully' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error deactivating member', error });
+    }
+};
+
 function isValidObjectId(id) {
     // Check if id is a valid MongoDB ObjectId
     const { ObjectId } = require('mongoose').Types;

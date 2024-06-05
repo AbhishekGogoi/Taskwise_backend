@@ -40,5 +40,8 @@ module.exports = (app) => {
     // Get all tasks of a User
     router.get("/user/:userId/tasks", memberController.getAllTasksByUserId);
 
+    // Define the route for exiting a member
+    router.post('/:workspaceId/members/:userId/exit', memberController.exitMember);
+
     app.use("/api/workspaces", router);
 };
