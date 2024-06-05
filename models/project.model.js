@@ -32,6 +32,7 @@ module.exports = mongoose => {
     const projectSchema = new mongoose.Schema({
         name: { type: String, required: true },
         description: String,
+        imgKey: { type: String, required: true},
         imgUrl: { type: String, required: true, default: 'https://img.freepik.com/free-vector/hand-drawn-minimal-background_23-2149001650.jpg'},
         workspaceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', required: true },
         order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Column' }],

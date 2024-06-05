@@ -1,4 +1,3 @@
-const cron = require('node-cron');
 const db = require("../models");
 const AWS = require('aws-sdk');
 require('dotenv').config();
@@ -19,10 +18,11 @@ const s3 = new AWS.S3({
 const bucketName = process.env.S3_BUCKET;
 
 async function updateImageUrls() {
+  console.log('updateImageUrls...');
   try {
-    await updateCollection(User);
+    // await updateCollection(User);
     await updateCollection(Workspace);
-    await updateCollection(Project);
+    // await updateCollection(Project);
     console.log("Image URLs updated successfully.");
   } catch (error) {
     console.error("Error updating image URLs:", error);
@@ -32,7 +32,7 @@ async function updateImageUrls() {
 async function updateCollection(Model) {
   const documents = await Model.find();
   await Promise.all(documents.map(async (document) => {
-    const updatedUrl = await getPresignedUrl(document.imgUrl);
+    const updatedUrl = await getPresignedUrl(document.imgKey);
     document.imgUrl = updatedUrl;
     await document.save();
   }));
@@ -43,7 +43,7 @@ function getPresignedUrl(objectKey) {
     const params = {
       Bucket: bucketName,
       Key: objectKey,
-      Expires: 3600 // URL expires in 1 hour, adjust as needed
+      Expires: 172800 // Expiry duration in seconds (48 hours)
     };
     s3.getSignedUrl("getObject", params, (err, url) => {
       if (err) {
@@ -55,12 +55,6 @@ function getPresignedUrl(objectKey) {
   });
 }
 
-// Schedule the updateImageUrls function to run at midnight every day
-cron.schedule('0 0 * * *', () => {
-  updateImageUrls();
-}, {
-  timezone: "Asia/Kolkata" // Specify your timezone here
-});
-
-// Call updateImageUrls once after starting the app
-updateImageUrls();
+module.exports = {
+  updateImageUrls
+};
