@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.S3_REGION,
   signatureVersion: 'v4'
 });
 
@@ -73,7 +74,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     const presignedUrl = await s3.getSignedUrlPromise('getObject', {
       Bucket: bucketName,
       Key: params.Key,
-      Expires: 3600
+      Expires: 172800 // Expiry duration in seconds (48 hours)
     });
 
     res.status(200).send({ 
@@ -81,8 +82,8 @@ router.post('/', upload.single('file'), async (req, res) => {
       presignedUrl: presignedUrl
     });
   } catch (error) {
-    console.error('S3 upload error:', error);
-    res.status(500).send('Error uploading file to S3.');
+    console.error('S3 upload error:', error.message); // Logging the actual error message
+    res.status(500).send('Error uploading file to S3: ' + error.message); // Sending detailed error message
   }
 });
 
