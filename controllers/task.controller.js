@@ -97,14 +97,14 @@ exports.addTaskToProject = async (req, res) => {
                 return res.status(400).json({ message: "Assignee must be a member of the workspace" });
             }
         }
-        if (createdBy) {
-            const isMember = workspace.members.some(member => 
-                member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
-            );
-            if (!isMember) {
-                return res.status(400).json({ message: "Assignee must be a member of the workspace" });
-            }
-        }
+        // if (createdBy) {
+        //     const isMember = workspace.members.some(member => 
+        //         member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
+        //     );
+        //     if (!isMember) {
+        //         return res.status(400).json({ message: "Assignee must be a member of the workspace" });
+        //     }
+        // }
 
         // Find the column by ID within the project
         const column = project.columns.id(columnId);
@@ -193,7 +193,7 @@ exports.updateTaskInProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
         const taskId = req.params.taskId;
-        const { taskName, content,assignees,priority,dueDate,comment } = req.body;
+        const { taskName, content,assigneeUserID,priority,dueDate,comments,attachments } = req.body;
 
         // Find the project by ID
         const project = await Project.findById(projectId);
@@ -212,9 +212,11 @@ exports.updateTaskInProject = async (req, res) => {
         // Update the task with the new data
         if (taskName) task.taskName = taskName;
         if (content) task.content = content;
-        if (assignees) task.assigneeUserID=assignees;
+        if (assigneeUserID) task.assigneeUserID=assigneeUserID;
         if(priority) task.priority=priority;
         if(dueDate) task.dueDate=dueDate;
+        if(comments) task.comments=comments;
+        if(attachments) task.attachments=attachments;
         // Save the project with the updated task
         await project.save();
 
