@@ -10,6 +10,7 @@ module.exports = (app) => {
     verifyResetCode,
     resendOTP,
     resetPassword,
+    updateProfile,
   } = require("../controllers/auth.controller.js");
 
   const router = require("express").Router();
@@ -49,6 +50,9 @@ module.exports = (app) => {
 
   // Route to handle resetting the password
   router.post("/auth/resetpassword", resetPassword);
+
+  // Route to handle updating the profile
+  router.put("/auth/updateprofile", updateProfile);
 
   app.use("/api", router);
 };

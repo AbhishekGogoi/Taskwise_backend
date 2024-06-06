@@ -97,7 +97,13 @@ module.exports = {
     }
 
     //2.create userModel
-    const userModel = new UserModel({ username, email, password, imgKey, imgUrl });
+    const userModel = new UserModel({
+      username,
+      email,
+      password,
+      imgKey,
+      imgUrl,
+    });
     //3.do password encryption
     userModel.password = await bcrypt.hash(password, 10);
     //4.save data to mongodb
@@ -656,6 +662,25 @@ module.exports = {
       res
         .status(500)
         .json({ message: "Error resetting password", error: err.message });
+    }
+  },
+
+  //For updating user profile
+  updateProfile: async (req, res) => {
+    const { title, userId } = req.body;
+
+    try {
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      user.title = title;
+      await user.save();
+
+      res.status(200).json({ message: "Profile updated successfully", user });
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error });
     }
   },
 };
