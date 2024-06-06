@@ -23,7 +23,7 @@ module.exports = (app) => {
     router.get("/:workspaceId/members", memberController.getWorkspaceMembers);
 
     // Add member of a Workspace
-    router.post('/:workspaceId/members', memberController.addMemberToWorkspace);
+    router.post('/:workspaceId/user/:adminUserId/members', memberController.addMembersToWorkspace);
 
     // Get all projects of a Workspace
     router.get("/:workspaceId/projects", memberController.getWorkspaceProjects);
@@ -41,7 +41,10 @@ module.exports = (app) => {
     router.get("/user/:userId/tasks", memberController.getAllTasksByUserId);
 
     // Define the route for exiting a member
-    router.post('/:workspaceId/members/:userId/exit', memberController.exitMember);
+    router.patch('/:workspaceId/members/:userId/exit', memberController.exitMember);
+
+    // Define the route to update member role
+    router.patch('/members/role/:adminUserId', memberController.updateMemberRole);
 
     app.use("/api/workspaces", router);
 };
