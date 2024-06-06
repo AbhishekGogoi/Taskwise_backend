@@ -25,6 +25,8 @@ const User = db.user;
  *               imgUrl:
  *                 type: string
  *                 description: URL of the workspace image
+ *               imgKey:
+ *                 type: string
  *               creatorUserID:
  *                 type: string
  *                 description: ID of the user creating the workspace
@@ -38,6 +40,7 @@ const User = db.user;
  *               description: "Workspace Description"
  *               imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
  *               creatorUserID: "UserId"
+ *               imgKey: "unique filename"
  *               memberEmails:
  *                 - "email1@example.com"
  *                 - "email2@example.com"
@@ -146,7 +149,7 @@ const User = db.user;
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, imgUrl, creatorUserID, memberEmails = [] } = req.body;
+        const { name, description, imgUrl, imgKey, creatorUserID, memberEmails = [] } = req.body;
 
         if (!name) {
             return res.status(400).send({ message: "Name field is required" });
@@ -183,6 +186,7 @@ exports.create = async (req, res) => {
             name,
             description,
             imgUrl,
+            imgKey,
             creatorUserID: user._id,
             isActive: true,
             members
