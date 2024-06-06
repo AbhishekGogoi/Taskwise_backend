@@ -187,6 +187,7 @@ module.exports = {
       //set the cookie
       res.cookie("access_token", jwtToken, {
         httpOnly: true, // Make the cookie HTTP only, so it's not accessible via JavaScript
+        secure: false,
         maxAge: 3600000, // 1 hour
       });
 
@@ -653,6 +654,36 @@ module.exports = {
       res
         .status(500)
         .json({ message: "Error resetting password", error: err.message });
+    }
+  },
+
+  changePassword: async (req, res) => {
+    try {
+      const { currentPassword, newPassword, user } = req.body;
+
+      // Find the user by userId
+      const userId = await UserModel.findById(user);
+
+      if (!userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Compare the current password with the password in the database
+      const isMatch = await bcrypt.compare(currentPassword, userId.password);
+
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid current password" });
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      userId.password = hashedPassword;
+
+      await userId.save();
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   },
 };
