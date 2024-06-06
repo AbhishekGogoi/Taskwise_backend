@@ -4,16 +4,16 @@ const User = db.user;
 
 /**
  * @swagger
- * /api/workspaces/{workspaceId}/members:
+ * /api/workspaces/{workspaceId}/user/{adminUserId}/members:
  *   post:
  *     tags:
  *       - Member
- *     summary: Add a member to a workspace
- *     description: Add a member to a workspace.
+ *     summary: Add members to a workspace
+ *     description: Add members to a workspace.
  *     parameters:
  *       - name: workspaceId
  *         in: path
- *         description: ID of the workspace to add a member to
+ *         description: ID of the workspace to add members to
  *         required: true
  *         schema:
  *           type: string
@@ -24,18 +24,20 @@ const User = db.user;
  *           schema:
  *             type: object
  *             properties:
- *               memberEmail:
- *                 type: string
- *                 description: Email of the member to add to the workspace
+ *               memberEmails:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Emails of the members to add to the workspace
  *               role:
  *                 type: string
- *                 description: Role of the member (optional)
+ *                 description: Role of the members (optional)
  *             example:
- *               memberEmail: "abc@email.com"
+ *               memberEmails: ["abc@email.com", "xyz@email.com"]
  *               role: "Admin or Member"
  *     responses:
  *       200:
- *         description: Successfully added member to the workspace
+ *         description: Successfully added members to the workspace
  *         schema:
  *           $ref: "#/definitions/Workspace"
  *       400:
@@ -43,16 +45,21 @@ const User = db.user;
  *       404:
  *         description: Workspace not found or User not found
  *       500:
- *         description: Error adding member to workspace
+ *         description: Error adding members to workspace
  */
-exports.addMemberToWorkspace = async (req, res) => {
+exports.addMembersToWorkspace = async (req, res) => {
     try {
-        const { workspaceId } = req.params;
-        const { memberEmail, role } = req.body;
+        const { workspaceId, adminUserId } = req.params;
+        const { memberEmails, role } = req.body;
 
         // Check if workspaceId is a valid ObjectId
         if (!isValidObjectId(workspaceId)) {
             return res.status(400).send({ message: "Invalid workspace ID" });
+        }
+
+        // Check if adminUserId is a valid ObjectId
+        if (!isValidObjectId(adminUserId)) {
+            return res.status(400).send({ message: "Invalid admin user ID" });
         }
 
         // Find the workspace by its ID
@@ -61,35 +68,55 @@ exports.addMemberToWorkspace = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
 
-        // Find the user by Email
-        const user = await User.findOne({ email: memberEmail });
-        if (!user) {
-            return res.status(404).send({ message: `User with Email ${memberEmail} not found` });
+        // Find the admin user by its ID
+        const adminUser = await User.findById(adminUserId);
+        if (!adminUser) {
+            return res.status(404).send({ message: "Admin user not found" });
         }
 
-        // Check if the member is already in the workspace
-        const existingMember = workspace.members.find(member => member.user.toString() === user._id.toString());
-        if (existingMember) {
-            return res.status(400).send({ message: `Member with Email ${memberEmail} already in workspace` });
+        // Check if the authenticated user is the admin of the workspace
+        if (workspace.creatorUserID.toString() !== adminUserId) {
+            return res.status(403).send({ message: "You are not authorized to perform this action" });
         }
 
-        // Add the member to the workspace
-        workspace.members.push({
-            user: user._id,
-            role: role || 'Member', // Default to 'Member' if role is not provided
-            isActive: true,
-            joinedAt: new Date()
-        });
+        const membersStatus = [];
 
-        // Update the workspace and send the updated workspace object in the response
+        // Loop through each member email and add them to the workspace
+        for (const memberEmail of memberEmails) {
+            // Find the user by Email
+            const user = await User.findOne({ email: memberEmail });
+            if (!user) {
+                membersStatus.push({ email: memberEmail, status: 'User not found' });
+                continue; // Continue with the next iteration
+            }
+
+            // Check if the member is already in the workspace
+            const existingMember = workspace.members.find(member => member.user.toString() === user._id.toString());
+            if (existingMember) {
+                membersStatus.push({ email: memberEmail, status: 'Member already in workspace' });
+                continue; // Continue with the next iteration
+            }
+
+            // Add the member to the workspace
+            workspace.members.push({
+                user: user._id,
+                role: role || 'Member', // Default to 'Member' if role is not provided
+                isActive: true,
+                joinedAt: new Date()
+            });
+
+            membersStatus.push({ email: memberEmail, status: 'Added successfully' });
+        }
+
+        // Update the workspace and send the updated workspace object along with members status in the response
         workspace.updatedAt = new Date();
         const updatedWorkspace = await workspace.save();
-        res.status(200).send(updatedWorkspace);
+        res.status(200).send({ workspace: updatedWorkspace, membersStatus });
     } catch (err) {
         // Log the error
-        console.error("Error adding member to workspace:", err);
+        console.error("Error adding members to workspace:", err);
         // Send a generic error message to the client
-        res.status(500).send({ message: "Error adding member to workspace" });
+        res.status(500).send({ message: "Error adding members to workspace" });
     }
 };
 
@@ -540,6 +567,154 @@ exports.getAllTasksByUserId = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send('Server error');
+    }
+};
+
+/**
+ * @swagger
+ * /api/workspaces/{workspaceId}/members/{userId}/exit:
+ *   patch:
+ *     summary: Deactivate a member from a workspace
+ *     tags: 
+ *       - Member
+ *     description: Deactivates a member from a workspace, setting their status to inactive
+ *     parameters:
+ *       - in: path
+ *         name: workspaceId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the workspace
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the user to deactivate
+ *     responses:
+ *       200:
+ *         description: Member deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Member deactivated successfully
+ *       404:
+ *         description: Workspace not found
+ *       500:
+ *         description: Error deactivating member
+ */
+exports.exitMember = async (req, res) => {
+    const { workspaceId, userId } = req.params;
+
+    try {
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: 'Workspace not found' });
+        }
+
+        const member = workspace.members.id(userId);
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        if (member.role === 'admin') {
+            const otherAdmins = workspace.members.filter(m => m.role === 'admin' && m._id.toString() !== userId);
+            if (otherAdmins.length === 0 && workspace.members.length > 1) {
+                return res.status(400).json({ message: 'Cannot deactivate the last admin. Please assign another admin first.' });
+            }
+        }
+
+        await workspace.exitMember(userId);
+        return res.status(200).json({ message: 'Member deactivated successfully' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error deactivating member', error });
+    }
+};
+
+/**
+ * @swagger
+ * /api/workspaces/members/role/{adminUserId}:
+ *   patch:
+ *     summary: Update a member's role in a workspace
+ *     tags: 
+ *       - Member
+ *     description: Updates a member's role to either admin or member. Only admins can perform this action.
+ *     parameters:
+ *       - in: path
+ *         name: adminUserId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the admin user performing the action
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               workspaceId:
+ *                 type: string
+ *                 description: The ID of the workspace
+ *               userId:
+ *                 type: string
+ *                 description: The ID of the user whose role is being updated
+ *               role:
+ *                 type: string
+ *                 enum: [Admin, Member]
+ *                 description: The new role of the user
+ *     responses:
+ *       200:
+ *         description: Member role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Member role updated successfully
+ *       400:
+ *         description: Invalid role or insufficient permissions
+ *       404:
+ *         description: Workspace or member not found
+ *       500:
+ *         description: Error updating member role
+ */
+exports.updateMemberRole = async (req, res) => {
+    const { adminUserId } = req.params;
+    const { workspaceId, userId, role } = req.body;
+
+    if (!['Admin', 'Member'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role. Role must be either Admin or Member.' });
+    }
+
+    try {
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: 'Workspace not found' });
+        }
+
+        const requestingMember = workspace.members.find(member => member.user.toString() === adminUserId);
+        if (!requestingMember || requestingMember.role !== 'Admin') {
+            return res.status(403).json({ message: 'Only admins can update member roles.' });
+        }
+
+        const memberToUpdate = workspace.members.find(member => member.user.toString() === userId);
+        if (!memberToUpdate) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        memberToUpdate.role = role;
+        await workspace.save();
+
+        return res.status(200).json({ message: 'Member role updated successfully' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error updating member role', error });
     }
 };
 

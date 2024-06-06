@@ -25,6 +25,15 @@ module.exports = mongoose => {
         return object;
     });
 
+    workspaceSchema.methods.exitMember = function (userId) {
+        const member = this.members.find(m => m.user.toString() === userId.toString());
+        if (member) {
+            member.isActive = false;
+            member.deactivatedAt = new Date();
+        }
+        return this.save();
+    };
+
     const Workspace = mongoose.model('Workspace', workspaceSchema);
     return Workspace;
-}
+};
