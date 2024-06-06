@@ -25,6 +25,8 @@ const mongoose=require("mongoose")
  *                 type: string
  *               creatorUserID:
  *                 type: string
+ *               imgKey:
+ *                 type: string
  *               imgUrl:
  *                 type: string
  *               order:
@@ -55,6 +57,7 @@ const mongoose=require("mongoose")
  *               name: "Project Name"
  *               description: "Project Description"
  *               workspaceID: "Unique Workspace ID"
+ *               imgKey: "unique filename"
  *               imgUrl: "https://img.freepik.com/free-vector/hand-drawn-minimal-background_23-2149001650.jpg"
  *               creatorUserID: "Unique User ID"
  *     responses:
@@ -108,7 +111,7 @@ const mongoose=require("mongoose")
  */
 exports.create = async (req, res) => {
     try {
-        const { name, description, workspaceID, order, columns, tasks, creatorUserID,imgUrl } = req.body;
+        const { name, description, workspaceID, order, columns, tasks, creatorUserID, imgUrl, imgKey } = req.body;
         if (!creatorUserID) {
             return res.status(400).send({ message: "Please enter the creator details" });
         }
@@ -152,7 +155,8 @@ exports.create = async (req, res) => {
             order,
             columns: defaultColumns,
             tasks,
-            imgUrl
+            imgUrl,
+            imgKey
         });
 
         const savedProject = await project.save();

@@ -6,9 +6,10 @@ const session = require("express-session");
 const passport = require("./utils/passport");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
-
+const cron = require('node-cron');
 const uploadController = require("./controllers/upload.controller");
 const db = require("./models");
+const { updateImageUrls } = require('./services/updateImageUrlsJob');
 
 const app = express();
 
@@ -55,10 +56,21 @@ db.mongoose
   });
 
 app.use("/api/upload", uploadController);
+app.use("/api/get-image-url", uploadController);
 // Import routes
 require("./routes/project.routes")(app);
 require("./routes/workspace.routes")(app);
 require("./routes/auth.routes")(app);
+
+// Schedule the updateImageUrls function to run at midnight every day
+cron.schedule('0 0 * * *', () => {
+  updateImageUrls();
+}, {
+  timezone: "Asia/Kolkata" // Specify your timezone here
+});
+
+// Call updateImageUrls once after starting the app
+updateImageUrls();
 
 const swaggerOptions = {
   swaggerDefinition: {
