@@ -22,7 +22,7 @@ async function updateImageUrls() {
   try {
     await updateCollection(User);
     await updateCollection(Workspace);
-    // await updateCollection(Project);
+    await updateProjectsAndTasksCollection(Project);
     console.log("Image URLs updated successfully.");
   } catch (error) {
     console.error("Error updating image URLs:", error);
@@ -35,6 +35,27 @@ async function updateCollection(Model) {
     const updatedUrl = await getPresignedUrl(document.imgKey);
     document.imgUrl = updatedUrl;
     await document.save();
+  }));
+}
+
+async function updateProjectsAndTasksCollection(Model) {
+  const projects = await Model.find();
+  await Promise.all(projects.map(async (project) => {
+    // Update project imgUrl
+    const updatedProjectUrl = await getPresignedUrl(project.imgKey);
+    project.imgUrl = updatedProjectUrl;
+
+    // Update tasks and their attachments imgUrls
+    await Promise.all(project.tasks.map(async (task) => {
+      if (task.attachments && task.attachments.length > 0) {
+        await Promise.all(task.attachments.map(async (attachment) => {
+          const updatedAttachmentUrl = await getPresignedUrl(attachment.docKey);
+          attachment.docUrl = updatedAttachmentUrl;
+        }));
+      }
+    }));
+
+    await project.save();
   }));
 }
 

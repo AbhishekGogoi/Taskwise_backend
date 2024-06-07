@@ -1,5 +1,6 @@
 const { string } = require("joi");
 const { default: mongoose } = require("mongoose");
+const validDocTypes = ['image', 'document', 'video']; // Define your valid document types here
 
 // Define Task schema
 const taskSchema = new mongoose.Schema({
@@ -14,7 +15,12 @@ const taskSchema = new mongoose.Schema({
     }, // Reference to user
     dueDate: { type: Date },
     priority: { type: String },
-    attachments:[{ type: String}],
+    attachments:[{
+       docType: {type: String, enum: validDocTypes},
+       docName: {type: String},
+       docKey: {type: String},
+       docUrl: {type: String}
+        }],
     comments: [{
         user: {
             _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
