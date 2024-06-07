@@ -6,14 +6,20 @@ const session = require("express-session");
 const passport = require("./utils/passport");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
-const cron = require('node-cron');
+const cron = require("node-cron");
 const uploadController = require("./controllers/upload.controller");
 const db = require("./models");
-const { updateImageUrls } = require('./services/updateImageUrlsJob');
+const { updateImageUrls } = require("./services/updateImageUrlsJob");
 
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+// app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const corsOptions = {
+  origin: "https://devtaskwisefrontend.netlify.app/", // Replace with your Netlify domain
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+  optionsSuccessStatus: 204,
+};
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -64,11 +70,15 @@ require("./routes/auth.routes")(app);
 require("./routes/ai.routes")(app);
 
 // Schedule the updateImageUrls function to run at midnight every day
-cron.schedule('0 0 * * *', () => {
-  updateImageUrls();
-}, {
-  timezone: "Asia/Kolkata" // Specify your timezone here
-});
+cron.schedule(
+  "0 0 * * *",
+  () => {
+    updateImageUrls();
+  },
+  {
+    timezone: "Asia/Kolkata", // Specify your timezone here
+  }
+);
 
 // Call updateImageUrls once after starting the app
 updateImageUrls();
