@@ -39,7 +39,7 @@ module.exports = (app) => {
     router.put("/projects/:projectId/tasks/:taskId", task.updateTaskInProject);
 
     // Route to Deactivate a task from a project
-    router.patch("/projects/:projectId/tasks/:taskId/deactivate", task.deactivateTaskInProject);
+    router.put("/projects/:projectId/tasks/:taskId/deactivate", task.deactivateTaskInProject);
 
     app.use("/api", router);
 };
