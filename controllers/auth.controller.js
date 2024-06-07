@@ -88,7 +88,7 @@ module.exports = {
 
   registerUser: async (req, res) => {
     // Validate request body
-    const { username, email, password, imgKey, imgUrl } = req.body;
+    const { username, email, password, imgKey, imgUrl, title } = req.body;
 
     // Check if user already exists
     const existingUser = await UserModel.findOne({ email });
@@ -103,6 +103,7 @@ module.exports = {
       password,
       imgKey,
       imgUrl,
+      title,
     });
     //3.do password encryption
     userModel.password = await bcrypt.hash(password, 10);
@@ -110,7 +111,7 @@ module.exports = {
     try {
       const response = await userModel.save();
       response.password = undefined;
-      return res.status(201).json({ message: "sucessfull", data: response });
+      return res.status(201).json({ message: "sucessfull", user: response });
     } catch (err) {
       return res.status(500).json({ message: "error", err: err });
     }
@@ -188,6 +189,8 @@ module.exports = {
         _id: user._id,
         username: user.username,
         email: user.email,
+        title: user.title,
+        imgUrl: user.imgUrl,
       };
       const jwtToken = jwt.sign(tokenObject, process.env.JWT_SECRET, {
         expiresIn: "1h",
@@ -270,7 +273,7 @@ module.exports = {
       const email = profile.emails[0].value;
       const name = profile.displayName;
 
-      let user = await UserModel.findOne({ email: email });
+      let user = await UserModel.findOne({ email });
 
       if (user) {
         // User already exists, generate JWT token and send response
@@ -284,21 +287,20 @@ module.exports = {
           });
         }
         if (res) res.status(200).json(userData);
-        else next(null, { ...userData, _id: user._id });
+        else next(null, user, false); // Indicate existing user
       } else {
         // User doesn't exist, generate random password, create user, generate JWT token, and send response
         let username = name
           ? name.split(" ").join("").toLowerCase() +
             Math.random().toString(36).slice(-8)
           : "defaultUsername" + Math.random().toString(36).slice(-8);
-        console.log(username, "username");
         const generatedPassword =
           Math.random().toString(36).slice(-8) +
           Math.random().toString(36).slice(-8);
         const hashedPassword = bcrypt.hashSync(generatedPassword, 10);
         const newUser = new UserModel({
-          username: username,
-          email: email,
+          username,
+          email,
           password: hashedPassword,
         });
         await newUser.save();
@@ -312,9 +314,10 @@ module.exports = {
           });
         }
         if (res) res.status(200).json(userData);
-        else next(null, { ...userData, _id: newUser._id });
+        else next(null, newUser, true); // Indicate new user
       }
     } catch (error) {
+      console.error("Error in googleOAuthSignup:", error);
       next(error);
     }
   },

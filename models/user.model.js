@@ -35,7 +35,7 @@ module.exports = (mongoose) => {
       // Added title field
       title: {
         type: String,
-        default: "",
+        default: "User",
       },
       resetCode: {
         type: String,
