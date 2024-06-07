@@ -61,6 +61,7 @@ app.use("/api/get-image-url", uploadController);
 require("./routes/project.routes")(app);
 require("./routes/workspace.routes")(app);
 require("./routes/auth.routes")(app);
+require("./routes/ai.routes")(app);
 
 // Schedule the updateImageUrls function to run at midnight every day
 cron.schedule('0 0 * * *', () => {
