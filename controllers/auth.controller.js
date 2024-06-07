@@ -188,6 +188,8 @@ module.exports = {
         _id: user._id,
         username: user.username,
         email: user.email,
+        title: user.title,
+        imgUrl: user.imgUrl,
       };
       const jwtToken = jwt.sign(tokenObject, process.env.JWT_SECRET, {
         expiresIn: "1h",
