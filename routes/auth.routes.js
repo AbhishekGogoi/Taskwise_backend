@@ -11,6 +11,7 @@ module.exports = (app) => {
     resendOTP,
     resetPassword,
     changePassword,
+    updateProfile,
   } = require("../controllers/auth.controller.js");
 
   const { ensureAuthenticated } = require("../utils/auth.js");
@@ -55,6 +56,9 @@ module.exports = (app) => {
 
   // Route to handle change password
   router.post("/auth/changepassword", changePassword, ensureAuthenticated);
+
+  // Route to handle updating the profile
+  router.put("/auth/updateprofile", updateProfile);
 
   app.use("/api", router);
 };

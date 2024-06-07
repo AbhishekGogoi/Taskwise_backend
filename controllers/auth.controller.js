@@ -88,7 +88,7 @@ module.exports = {
 
   registerUser: async (req, res) => {
     // Validate request body
-    const { username, email, password, imgKey, imgUrl } = req.body;
+    const { username, email, password, imgKey, imgUrl, title } = req.body;
 
     // Check if user already exists
     const existingUser = await UserModel.findOne({ email });
@@ -97,14 +97,21 @@ module.exports = {
     }
 
     //2.create userModel
-    const userModel = new UserModel({ username, email, password, imgKey, imgUrl });
+    const userModel = new UserModel({
+      username,
+      email,
+      password,
+      imgKey,
+      imgUrl,
+      title,
+    });
     //3.do password encryption
     userModel.password = await bcrypt.hash(password, 10);
     //4.save data to mongodb
     try {
       const response = await userModel.save();
       response.password = undefined;
-      return res.status(201).json({ message: "sucessfull", data: response });
+      return res.status(201).json({ message: "sucessfull", user: response });
     } catch (err) {
       return res.status(500).json({ message: "error", err: err });
     }
@@ -182,6 +189,8 @@ module.exports = {
         _id: user._id,
         username: user.username,
         email: user.email,
+        title: user.title,
+        imgUrl: user.imgUrl,
       };
       const jwtToken = jwt.sign(tokenObject, process.env.JWT_SECRET, {
         expiresIn: "1h",
@@ -687,6 +696,25 @@ module.exports = {
     } catch (error) {
       console.error("Error changing password:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  },
+
+  //For updating user profile
+  updateProfile: async (req, res) => {
+    const { title, userId } = req.body;
+
+    try {
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      user.title = title;
+      await user.save();
+
+      res.status(200).json({ message: "Profile updated successfully", user });
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error });
     }
   },
 };
