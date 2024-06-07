@@ -4,6 +4,8 @@ const Workspace = db.workspace;
 const Column=db.Column;
 const mongoose=require("mongoose")
 
+const validDocTypes = ['image', 'document', 'video']; // Define allowed document types
+
 /**
  * @swagger
  * /api/projects/{projectId}/tasks:
@@ -38,9 +40,45 @@ const mongoose=require("mongoose")
  *               priority:
  *                 type: string
  *                 enum: [Low, Medium, High]
- *               status:
- *                 type: string
- *                 enum: [To Do, In Progress, Done]
+ *               comments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         username:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                     comment:
+ *                       type: string
+ *               createdBy:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   username:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *               attachments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     docType:
+ *                       type: string
+ *                       enum: [image, document, video]
+ *                     docName:
+ *                       type: string
+ *                     docKey:
+ *                       type: string
+ *                     docUrl:
+ *                       type: string
  *             example:
  *               taskName: "New Task"
  *               content: "Task content here"
@@ -48,7 +86,29 @@ const mongoose=require("mongoose")
  *               assigneeUserID: "userId123"
  *               dueDate: "2023-12-31"
  *               priority: "High"
- *               status: "To Do"
+ *               comments: [
+ *                 {
+ *                   user: {
+ *                     _id: "userId123",
+ *                     username: "username123",
+ *                     email: "user@example.com"
+ *                   },
+ *                   comment: "This is a comment"
+ *                 }
+ *               ]
+ *               createdBy: {
+ *                 _id: "userId123",
+ *                 username: "creatorUsername",
+ *                 email: "creator@example.com"
+ *               }
+ *               attachments: [
+ *                 {
+ *                   docType: "image",
+ *                   docName: "screenshot.png",
+ *                   docKey: "screenshot123",
+ *                   docUrl: "http://example.com/screenshot123.png"
+ *                 }
+ *               ]
  *     responses:
  *       201:
  *         description: Task added successfully
@@ -75,6 +135,16 @@ exports.addTaskToProject = async (req, res) => {
         // if (status && !validStatuses.includes(status)) {
         //     return res.status(400).json({ message: `Invalid status value. Allowed values are: ${validStatuses.join(', ')}` });
         // }
+        if (attachments) {
+            for (const attachment of attachments) {
+                if (!validDocTypes.includes(attachment.docType)) {
+                    return res.status(400).json({ message: `Invalid document type in attachments. Allowed values are: ${validDocTypes.join(', ')}` });
+                }
+                if (!attachment.docName || !attachment.docKey || !attachment.docUrl) {
+                    return res.status(400).json({ message: 'Attachments must include docType, docName, docKey, and docUrl for each item' });
+                }
+            }
+        }
 
         // Find the project by ID
         const project = await Project.findById(projectId);
@@ -97,14 +167,14 @@ exports.addTaskToProject = async (req, res) => {
                 return res.status(400).json({ message: "Assignee must be a member of the workspace" });
             }
         }
-        if (createdBy) {
-            const isMember = workspace.members.some(member => 
-                member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
-            );
-            if (!isMember) {
-                return res.status(400).json({ message: "Assignee must be a member of the workspace" });
-            }
-        }
+        // if (createdBy) {
+        //     const isMember = workspace.members.some(member => 
+        //         member.user.equals(new mongoose.Types.ObjectId(createdBy)) && member.isActive
+        //     );
+        //     if (!isMember) {
+        //         return res.status(400).json({ message: "Assignee must be a member of the workspace" });
+        //     }
+        // }
 
         // Find the column by ID within the project
         const column = project.columns.id(columnId);
@@ -123,7 +193,6 @@ exports.addTaskToProject = async (req, res) => {
             createdBy,
             attachments
             //status: columnId, // To Do, In Progress, Done, etc.
-
         };
 
         // Add the new task to the project's tasks array
@@ -178,12 +247,73 @@ exports.addTaskToProject = async (req, res) => {
  *                 type: string
  *               content:
  *                 type: string
+ *               assigneeUserID:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *               priority:
+ *                 type: string
+ *                 enum: [Low, Medium, High]
+ *               comments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         username:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                     comment:
+ *                       type: string
+ *               attachments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     docType:
+ *                       type: string
+ *                       enum: [image, document, video]
+ *                     docName:
+ *                       type: string
+ *                     docKey:
+ *                       type: string
+ *                     docUrl:
+ *                       type: string
  *             example:
  *               taskName: "Updated Task Name"
  *               content: "Updated content here"
+ *               assigneeUserID: "newUserId123"
+ *               dueDate: "2024-01-31"
+ *               priority: "Medium"
+ *               comments: [
+ *                 {
+ *                   user: {
+ *                     _id: "userId123",
+ *                     username: "username123",
+ *                     email: "user@example.com"
+ *                   },
+ *                   comment: "Updated comment"
+ *                 }
+ *               ]
+ *               attachments: [
+ *                 {
+ *                   docType: "document",
+ *                   docName: "updatedDoc.pdf",
+ *                   docKey: "doc123",
+ *                   docUrl: "http://example.com/doc123.pdf"
+ *                 }
+ *               ]
  *     responses:
  *       200:
  *         description: Task updated successfully
+ *       400:
+ *         description: Invalid input
  *       404:
  *         description: Project or task not found
  *       500:
@@ -193,15 +323,26 @@ exports.updateTaskInProject = async (req, res) => {
     try {
         const projectId = req.params.projectId;
         const taskId = req.params.taskId;
-        const { taskName, content,assignees,priority,dueDate,comment } = req.body;
+        const { taskName, content,assigneeUserID,priority,dueDate,comments,attachments } = req.body;
+
+        const validDocTypes = ['image', 'document', 'video']; // Define allowed document types
+
+        if (attachments) {
+            for (const attachment of attachments) {
+                if (!validDocTypes.includes(attachment.docType)) {
+                    return res.status(400).json({ message: `Invalid document type in attachments. Allowed values are: ${validDocTypes.join(', ')}` });
+                }
+                if (!attachment.docName || !attachment.docKey || !attachment.docUrl) {
+                    return res.status(400).json({ message: 'Attachments must include docType, docName, docKey, and docUrl for each item' });
+                }
+            }
+        }
 
         // Find the project by ID
         const project = await Project.findById(projectId);
         if (!project) {
             return res.status(404).json({ message: "Project not found" });
         }
-
-        
 
         // Find the task within the project's tasks array
         const task = project.tasks.id(taskId);
@@ -212,9 +353,11 @@ exports.updateTaskInProject = async (req, res) => {
         // Update the task with the new data
         if (taskName) task.taskName = taskName;
         if (content) task.content = content;
-        if (assignees) task.assigneeUserID=assignees;
+        if (assigneeUserID) task.assigneeUserID=assigneeUserID;
         if(priority) task.priority=priority;
         if(dueDate) task.dueDate=dueDate;
+        if(comments) task.comments=comments;
+        if(attachments) task.attachments=attachments;
         // Save the project with the updated task
         await project.save();
 

@@ -289,10 +289,13 @@ exports.getAllWorkspaces = async (req, res) => {
  *                 type: string
  *               imgUrl:
  *                 type: string
+ *               imgKey:
+ *                 type: string
  *             example:
  *               name: "Updated Workspace Name"
  *               description: "Updated Workspace Description"
  *               imgUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+ *               imgKey: "46273834b3fb"
  *     responses:
  *       200:
  *         description: Workspace updated successfully
@@ -338,7 +341,7 @@ exports.getWorkspaceById = async (req, res) => {
 exports.updateWorkspace = async (req, res) => {
     try {
         const { workspaceId } = req.params;
-        const { name, description, imgUrl } = req.body;
+        const { name, description, imgUrl, imgKey } = req.body;
         if (!isValidObjectId(workspaceId)) {
             return res.status(400).send({ message: "Invalid workspace ID" });
         }
@@ -350,6 +353,7 @@ exports.updateWorkspace = async (req, res) => {
         if (name) workspace.name = name;
         if (description) workspace.description = description;
         if (imgUrl) workspace.imgUrl = imgUrl;
+        if (imgKey) workspace.imgKey = imgKey;
         workspace.updatedAt = new Date();
 
         const updatedWorkspace = await workspace.save();
@@ -426,13 +430,13 @@ exports.deactivateWorkspace = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
 
-        // // Check if the user is admin
-        // const userIsAdmin = workspace.members.some(
-        //     member => member.userID.toString() === req.userId && member.role === 'Admin'
-        // );
-        // if (!userIsAdmin) {
-        //     return res.status(403).send({ message: "Forbidden: You are not allowed to deactivate this workspace" });
-        // }
+        // Check if the user is admin
+        const userIsAdmin = workspace.members.some(
+            member => member.userID.toString() === req.userId && member.role === 'Admin'
+        );
+        if (!userIsAdmin) {
+            return res.status(403).send({ message: "Forbidden: You are not allowed to deactivate this workspace" });
+        }
 
         workspace.isActive = false;
         workspace.deactivatedAt = new Date();

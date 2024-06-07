@@ -10,8 +10,11 @@ module.exports = (app) => {
     verifyResetCode,
     resendOTP,
     resetPassword,
+    changePassword,
     updateProfile,
   } = require("../controllers/auth.controller.js");
+
+  const { ensureAuthenticated } = require("../utils/auth.js");
 
   const router = require("express").Router();
 
@@ -50,6 +53,9 @@ module.exports = (app) => {
 
   // Route to handle resetting the password
   router.post("/auth/resetpassword", resetPassword);
+
+  // Route to handle change password
+  router.post("/auth/changepassword", changePassword, ensureAuthenticated);
 
   // Route to handle updating the profile
   router.put("/auth/updateprofile", updateProfile);

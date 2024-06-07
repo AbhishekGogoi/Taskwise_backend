@@ -1,5 +1,6 @@
 const { string } = require("joi");
 const { default: mongoose } = require("mongoose");
+const validDocTypes = ['image', 'document', 'video']; // Define your valid document types here
 
 // Define Task schema
 const taskSchema = new mongoose.Schema({
@@ -7,15 +8,32 @@ const taskSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true },
     deactivatedAt: { type: Date },
     content: { type: String },
-    assigneeUserID: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user
+    assigneeUserID: {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+        username: { type: String},
+        email: { type: String }
+    }, // Reference to user
     dueDate: { type: Date },
     priority: { type: String },
-    attachments:[{ type: String}],
+    attachments:[{
+       docType: {type: String, enum: validDocTypes},
+       docName: {type: String},
+       docKey: {type: String},
+       docUrl: {type: String}
+        }],
     comments: [{
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to user who made the comment
+        user: {
+            _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+            username: { type: String},
+            email: { type: String }
+        },
         comment: { type: String }
     }],
-    createdBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    createdBy:{
+        _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+        username: { type: String},
+        email: { type: String }
+    }
     //status:{type:mongoose.Schema.Types.ObjectId,ref: 'Column'}
 }, { timestamps: true });
 
