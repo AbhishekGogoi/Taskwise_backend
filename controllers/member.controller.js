@@ -368,15 +368,12 @@ exports.getAllWorkspacesByUserId = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find all workspaces where the user is a member
+        // Find all active workspaces where the user is an active member
         const workspaces = await Workspace.find({
+            isActive: true,
             "members.user": userId,
             "members.isActive": true
         });
-
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces found for this user" });
-        }
 
         // Map workspaces to the response format
         const response = workspaces.map(workspace => ({
@@ -385,7 +382,7 @@ exports.getAllWorkspacesByUserId = async (req, res) => {
             imgUrl: workspace.imgUrl
         }));
 
-        // Respond with the list of workspaces
+        // Respond with the list of workspaces or an empty array
         res.status(200).json(response);
     } catch (error) {
         console.error(error);
@@ -449,10 +446,6 @@ exports.getAllProjectsByUserId = async (req, res) => {
             "members.user": userId,
             "members.isActive": true
         }).populate('projects');
-
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces or projects found for this user" });
-        }
 
         // Collect and map all projects from the found workspaces
         const projects = workspaces.flatMap(workspace => {
@@ -543,21 +536,18 @@ exports.getAllTasksByUserId = async (req, res) => {
             }
         });
 
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces or projects found for this user" });
-        }
-
         // Collect and map all tasks from the found workspaces and projects
         const tasks = workspaces.flatMap(workspace => {
             return workspace.projects.flatMap(project => {
                 return project.tasks.map(task => ({
                     id: task._id,
-                    taskName: task.taskName,
+                    name: task.taskName,
                     dueDate: task.dueDate,
                     priority: task.priority,
                     status: task.status,
-                    workspaceName: workspace.name,
-                    projectName: project.name
+                    workspace: workspace.name,
+                    project: project.name,
+                    createdBy: task.createdBy
                 }));
             });
         });
