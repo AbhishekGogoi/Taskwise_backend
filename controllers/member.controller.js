@@ -631,7 +631,7 @@ exports.exitMember = async (req, res) => {
             }
         }
 
-        // Assuming `exitMember` is a method of the `Workspace` model
+        // `exitMember` is a method of the `Workspace` model
         await workspace.exitMember(userId);
 
         // Check the number of active members
