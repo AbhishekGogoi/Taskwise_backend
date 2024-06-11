@@ -639,6 +639,8 @@ exports.exitMember = async (req, res) => {
         if (activeMembers.length === 0) {
             // Append epoch to the workspace name
             workspace.name += `_${Date.now()}`;
+            workspace.isActive = false;
+            workspace.deactivatedAt = new Date();
             await workspace.save();
         }
 
