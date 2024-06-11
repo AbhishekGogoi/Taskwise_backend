@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongoose').Types;
 const db = require("../models");
 const Workspace = db.workspace;
 const User = db.user;
@@ -491,6 +492,11 @@ exports.getAllProjectsByUserId = async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: projectName
+ *         required: false
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: A list of tasks
@@ -524,6 +530,7 @@ exports.getAllProjectsByUserId = async (req, res) => {
 exports.getAllTasksByUserId = async (req, res) => {
     try {
         const userId = req.params.userId;
+        const projectName = req.query.projectName;
 
         // Validate userId
         if (!isValidObjectId(userId)) {
@@ -536,33 +543,60 @@ exports.getAllTasksByUserId = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find all workspaces where the user is a member
-        const workspaces = await Workspace.find({
-            "members.user": userId,
-            "members.isActive": true
-        }).populate({
-            path: 'projects',
-            populate: {
-                path: 'tasks',
-                match: { assigneeUserID: userId }
+        // Aggregate tasks assigned to the user
+        const aggregatePipeline = [
+            {
+                $match: {
+                    "members.user": new ObjectId(userId),
+                    "members.isActive": true
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects",
+                    localField: "projects",
+                    foreignField: "_id",
+                    as: "projects"
+                }
+            },
+            { $unwind: "$projects" },
+            { $unwind: "$projects.tasks" },
+            {
+                $match: {
+                    "projects.tasks.assigneeUserID.id": new ObjectId(userId)
+                }
+            }
+        ];
+
+        // Add an additional match stage for projectName if provided
+        if (projectName) {
+            aggregatePipeline.push({
+                $match: {
+                    "projects.name": projectName
+                }
+            });
+        }
+
+        // Continue with the project stage
+        aggregatePipeline.push({
+            $project: {
+                _id: "$projects.tasks._id",
+                name: "$projects.tasks.taskName",
+                isActive: "$projects.tasks.isActive",
+                content: "$projects.tasks.content",
+                assigneeUserID: "$projects.tasks.assigneeUserID",
+                dueDate: "$projects.tasks.dueDate",
+                priority: "$projects.tasks.priority",
+                attachments: "$projects.tasks.attachments",
+                comments: "$projects.tasks.comments",
+                createdBy: "$projects.tasks.createdBy",
+                workspace: "$name",
+                project: "$projects.name"
             }
         });
 
-        // Collect and map all tasks from the found workspaces and projects
-        const tasks = workspaces.flatMap(workspace => {
-            return workspace.projects.flatMap(project => {
-                return project.tasks.map(task => ({
-                    id: task._id,
-                    name: task.taskName,
-                    dueDate: task.dueDate,
-                    priority: task.priority,
-                    status: task.status,
-                    workspace: workspace.name,
-                    project: project.name,
-                    createdBy: task.createdBy
-                }));
-            });
-        });
+        console.log(aggregatePipeline)
+        const tasks = await Workspace.aggregate(aggregatePipeline);
 
         // Respond with the list of tasks
         res.status(200).json(tasks);
@@ -570,7 +604,7 @@ exports.getAllTasksByUserId = async (req, res) => {
         console.error(error);
         res.status(500).send('Server error');
     }
-};
+}; 
 
 /**
  * @swagger
@@ -736,6 +770,5 @@ exports.updateMemberRole = async (req, res) => {
 
 function isValidObjectId(id) {
     // Check if id is a valid MongoDB ObjectId
-    const { ObjectId } = require('mongoose').Types;
     return ObjectId.isValid(id);
 }
