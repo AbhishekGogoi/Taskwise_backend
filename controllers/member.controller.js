@@ -74,9 +74,10 @@ exports.addMembersToWorkspace = async (req, res) => {
             return res.status(404).send({ message: "Admin user not found" });
         }
 
-        // Check if the authenticated user is the admin of the workspace
-        if (workspace.creatorUserID.toString() !== adminUserId) {
-            return res.status(403).send({ message: "You are not authorized to perform this action" });
+        // Check if the authenticated user is an admin of the workspace
+        const isAdmin = workspace.members.some(m => m.user.toString() === adminUserId && m.role === 'Admin');
+        if (!isAdmin) {
+            return res.status(403).json({ message: "You are not authorized to perform this action" });
         }
 
         const membersStatus = [];
@@ -179,25 +180,28 @@ exports.getWorkspaceMembers = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
         
-        // Extract imgUrl and email from populated members
-        const membersWithImgUrlAndEmail = workspace.members.map(member => ({
-            user: {
-                id: member.user._id,
-                email: member.user.email,
-                imgUrl: member.user.imgUrl
-            },
-            role: member.role,
-            isActive: member.isActive,
-            joinedAt: member.joinedAt,
-            deactivatedAt: member.deactivatedAt,
-        }));
+        // Filter and extract imgUrl and email from populated members with active status
+        const activeMembersWithImgUrlAndEmail = workspace.members
+            .filter(member => member.isActive) // Filter active members
+            .map(member => ({
+                user: {
+                    id: member.user._id,
+                    email: member.user.email,
+                    imgUrl: member.user.imgUrl
+                },
+                role: member.role,
+                isActive: member.isActive,
+                joinedAt: member.joinedAt,
+                deactivatedAt: member.deactivatedAt,
+            }));
 
-        res.status(200).send(membersWithImgUrlAndEmail);
+        res.status(200).send(activeMembersWithImgUrlAndEmail);
     } catch (err) {
         console.error("Error retrieving workspace members:", err);
         res.status(500).send({ message: "Error retrieving workspace members" });
     }
 };
+
 
 /**
  * @swagger
@@ -368,24 +372,29 @@ exports.getAllWorkspacesByUserId = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find all workspaces where the user is a member
+        // Find all active workspaces where the user is an active member
         const workspaces = await Workspace.find({
-            "members.user": userId,
-            "members.isActive": true
+            isActive: true,
+            members: {
+                $elemMatch: {
+                    user: userId,
+                    isActive: true
+                }
+            }
         });
 
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces found for this user" });
-        }
-
-        // Map workspaces to the response format
+        // Map workspaces to the response format including members' IDs and active status array
         const response = workspaces.map(workspace => ({
             id: workspace._id,
             name: workspace.name,
-            imgUrl: workspace.imgUrl
+            imgUrl: workspace.imgUrl,
+            members: workspace.members.map(member => ({
+                userId: member.user,
+                isActive: member.isActive
+            }))
         }));
 
-        // Respond with the list of workspaces
+        // Respond with the list of workspaces or an empty array
         res.status(200).json(response);
     } catch (error) {
         console.error(error);
@@ -449,10 +458,6 @@ exports.getAllProjectsByUserId = async (req, res) => {
             "members.user": userId,
             "members.isActive": true
         }).populate('projects');
-
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces or projects found for this user" });
-        }
 
         // Collect and map all projects from the found workspaces
         const projects = workspaces.flatMap(workspace => {
@@ -543,21 +548,18 @@ exports.getAllTasksByUserId = async (req, res) => {
             }
         });
 
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces or projects found for this user" });
-        }
-
         // Collect and map all tasks from the found workspaces and projects
         const tasks = workspaces.flatMap(workspace => {
             return workspace.projects.flatMap(project => {
                 return project.tasks.map(task => ({
                     id: task._id,
-                    taskName: task.taskName,
+                    name: task.taskName,
                     dueDate: task.dueDate,
                     priority: task.priority,
                     status: task.status,
-                    workspaceName: workspace.name,
-                    projectName: project.name
+                    workspace: workspace.name,
+                    project: project.name,
+                    createdBy: task.createdBy
                 }));
             });
         });
@@ -607,6 +609,7 @@ exports.getAllTasksByUserId = async (req, res) => {
  *       500:
  *         description: Error deactivating member
  */
+
 exports.exitMember = async (req, res) => {
     const { workspaceId, userId } = req.params;
 
@@ -616,21 +619,34 @@ exports.exitMember = async (req, res) => {
             return res.status(404).json({ message: 'Workspace not found' });
         }
 
-        const member = workspace.members.id(userId);
+        const member = workspace.members.find(m => m.user && m.user.toString() === userId);
         if (!member) {
             return res.status(404).json({ message: 'Member not found' });
         }
 
-        if (member.role === 'admin') {
-            const otherAdmins = workspace.members.filter(m => m.role === 'admin' && m._id.toString() !== userId);
+        if (member.role === 'Admin') {
+            const otherAdmins = workspace.members.filter(m => m.role === 'Admin' && m.user.toString() !== userId);
             if (otherAdmins.length === 0 && workspace.members.length > 1) {
                 return res.status(400).json({ message: 'Cannot deactivate the last admin. Please assign another admin first.' });
             }
         }
 
+        // `exitMember` is a method of the `Workspace` model
         await workspace.exitMember(userId);
+
+        // Check the number of active members
+        const activeMembers = workspace.members.filter(m => m.isActive);
+        if (activeMembers.length === 0) {
+            // Append epoch to the workspace name
+            workspace.name += `_${Date.now()}`;
+            workspace.isActive = false;
+            workspace.deactivatedAt = new Date();
+            await workspace.save();
+        }
+
         return res.status(200).json({ message: 'Member deactivated successfully' });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ message: 'Error deactivating member', error });
     }
 };
