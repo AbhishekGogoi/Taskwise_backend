@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongoose').Types;
 const db = require("../models");
 const Workspace = db.workspace;
 const User = db.user;
@@ -74,9 +75,10 @@ exports.addMembersToWorkspace = async (req, res) => {
             return res.status(404).send({ message: "Admin user not found" });
         }
 
-        // Check if the authenticated user is the admin of the workspace
-        if (workspace.creatorUserID.toString() !== adminUserId) {
-            return res.status(403).send({ message: "You are not authorized to perform this action" });
+        // Check if the authenticated user is an admin of the workspace
+        const isAdmin = workspace.members.some(m => m.user.toString() === adminUserId && m.role === 'Admin');
+        if (!isAdmin) {
+            return res.status(403).json({ message: "You are not authorized to perform this action" });
         }
 
         const membersStatus = [];
@@ -179,25 +181,28 @@ exports.getWorkspaceMembers = async (req, res) => {
             return res.status(404).send({ message: "Workspace not found" });
         }
         
-        // Extract imgUrl and email from populated members
-        const membersWithImgUrlAndEmail = workspace.members.map(member => ({
-            user: {
-                id: member.user._id,
-                email: member.user.email,
-                imgUrl: member.user.imgUrl
-            },
-            role: member.role,
-            isActive: member.isActive,
-            joinedAt: member.joinedAt,
-            deactivatedAt: member.deactivatedAt,
-        }));
+        // Filter and extract imgUrl and email from populated members with active status
+        const activeMembersWithImgUrlAndEmail = workspace.members
+            .filter(member => member.isActive) // Filter active members
+            .map(member => ({
+                user: {
+                    id: member.user._id,
+                    email: member.user.email,
+                    imgUrl: member.user.imgUrl
+                },
+                role: member.role,
+                isActive: member.isActive,
+                joinedAt: member.joinedAt,
+                deactivatedAt: member.deactivatedAt,
+            }));
 
-        res.status(200).send(membersWithImgUrlAndEmail);
+        res.status(200).send(activeMembersWithImgUrlAndEmail);
     } catch (err) {
         console.error("Error retrieving workspace members:", err);
         res.status(500).send({ message: "Error retrieving workspace members" });
     }
 };
+
 
 /**
  * @swagger
@@ -368,24 +373,29 @@ exports.getAllWorkspacesByUserId = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find all workspaces where the user is a member
+        // Find all active workspaces where the user is an active member
         const workspaces = await Workspace.find({
-            "members.user": userId,
-            "members.isActive": true
+            isActive: true,
+            members: {
+                $elemMatch: {
+                    user: userId,
+                    isActive: true
+                }
+            }
         });
 
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces found for this user" });
-        }
-
-        // Map workspaces to the response format
+        // Map workspaces to the response format including members' IDs and active status array
         const response = workspaces.map(workspace => ({
             id: workspace._id,
             name: workspace.name,
-            imgUrl: workspace.imgUrl
+            imgUrl: workspace.imgUrl,
+            members: workspace.members.map(member => ({
+                userId: member.user,
+                isActive: member.isActive
+            }))
         }));
 
-        // Respond with the list of workspaces
+        // Respond with the list of workspaces or an empty array
         res.status(200).json(response);
     } catch (error) {
         console.error(error);
@@ -450,10 +460,6 @@ exports.getAllProjectsByUserId = async (req, res) => {
             "members.isActive": true
         }).populate('projects');
 
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces or projects found for this user" });
-        }
-
         // Collect and map all projects from the found workspaces
         const projects = workspaces.flatMap(workspace => {
             return workspace.projects.map(project => ({
@@ -484,6 +490,11 @@ exports.getAllProjectsByUserId = async (req, res) => {
  *       - in: path
  *         name: userId
  *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: projectName
+ *         required: false
  *         schema:
  *           type: string
  *     responses:
@@ -519,6 +530,7 @@ exports.getAllProjectsByUserId = async (req, res) => {
 exports.getAllTasksByUserId = async (req, res) => {
     try {
         const userId = req.params.userId;
+        const projectName = req.query.projectName;
 
         // Validate userId
         if (!isValidObjectId(userId)) {
@@ -531,36 +543,60 @@ exports.getAllTasksByUserId = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Find all workspaces where the user is a member
-        const workspaces = await Workspace.find({
-            "members.user": userId,
-            "members.isActive": true
-        }).populate({
-            path: 'projects',
-            populate: {
-                path: 'tasks',
-                match: { assigneeUserID: userId }
+        // Aggregate tasks assigned to the user
+        const aggregatePipeline = [
+            {
+                $match: {
+                    "members.user": new ObjectId(userId),
+                    "members.isActive": true
+                }
+            },
+            {
+                $lookup: {
+                    from: "projects",
+                    localField: "projects",
+                    foreignField: "_id",
+                    as: "projects"
+                }
+            },
+            { $unwind: "$projects" },
+            { $unwind: "$projects.tasks" },
+            {
+                $match: {
+                    "projects.tasks.assigneeUserID.id": new ObjectId(userId)
+                }
+            }
+        ];
+
+        // Add an additional match stage for projectName if provided
+        if (projectName) {
+            aggregatePipeline.push({
+                $match: {
+                    "projects.name": projectName
+                }
+            });
+        }
+
+        // Continue with the project stage
+        aggregatePipeline.push({
+            $project: {
+                _id: "$projects.tasks._id",
+                name: "$projects.tasks.taskName",
+                isActive: "$projects.tasks.isActive",
+                content: "$projects.tasks.content",
+                assigneeUserID: "$projects.tasks.assigneeUserID",
+                dueDate: "$projects.tasks.dueDate",
+                priority: "$projects.tasks.priority",
+                attachments: "$projects.tasks.attachments",
+                comments: "$projects.tasks.comments",
+                createdBy: "$projects.tasks.createdBy",
+                workspace: "$name",
+                project: "$projects.name"
             }
         });
 
-        if (workspaces.length === 0) {
-            return res.status(404).json({ message: "No workspaces or projects found for this user" });
-        }
-
-        // Collect and map all tasks from the found workspaces and projects
-        const tasks = workspaces.flatMap(workspace => {
-            return workspace.projects.flatMap(project => {
-                return project.tasks.map(task => ({
-                    id: task._id,
-                    taskName: task.taskName,
-                    dueDate: task.dueDate,
-                    priority: task.priority,
-                    status: task.status,
-                    workspaceName: workspace.name,
-                    projectName: project.name
-                }));
-            });
-        });
+        console.log(aggregatePipeline)
+        const tasks = await Workspace.aggregate(aggregatePipeline);
 
         // Respond with the list of tasks
         res.status(200).json(tasks);
@@ -607,6 +643,7 @@ exports.getAllTasksByUserId = async (req, res) => {
  *       500:
  *         description: Error deactivating member
  */
+
 exports.exitMember = async (req, res) => {
     const { workspaceId, userId } = req.params;
 
@@ -616,21 +653,34 @@ exports.exitMember = async (req, res) => {
             return res.status(404).json({ message: 'Workspace not found' });
         }
 
-        const member = workspace.members.id(userId);
+        const member = workspace.members.find(m => m.user && m.user.toString() === userId);
         if (!member) {
             return res.status(404).json({ message: 'Member not found' });
         }
 
-        if (member.role === 'admin') {
-            const otherAdmins = workspace.members.filter(m => m.role === 'admin' && m._id.toString() !== userId);
+        if (member.role === 'Admin') {
+            const otherAdmins = workspace.members.filter(m => m.role === 'Admin' && m.user.toString() !== userId);
             if (otherAdmins.length === 0 && workspace.members.length > 1) {
                 return res.status(400).json({ message: 'Cannot deactivate the last admin. Please assign another admin first.' });
             }
         }
 
+        // `exitMember` is a method of the `Workspace` model
         await workspace.exitMember(userId);
+
+        // Check the number of active members
+        const activeMembers = workspace.members.filter(m => m.isActive);
+        if (activeMembers.length === 0) {
+            // Append epoch to the workspace name
+            workspace.name += `_${Date.now()}`;
+            workspace.isActive = false;
+            workspace.deactivatedAt = new Date();
+            await workspace.save();
+        }
+
         return res.status(200).json({ message: 'Member deactivated successfully' });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ message: 'Error deactivating member', error });
     }
 };
@@ -720,6 +770,5 @@ exports.updateMemberRole = async (req, res) => {
 
 function isValidObjectId(id) {
     // Check if id is a valid MongoDB ObjectId
-    const { ObjectId } = require('mongoose').Types;
     return ObjectId.isValid(id);
 }
