@@ -6,7 +6,6 @@ module.exports = {
     try {
       const userId = req.params.userId;
       const notifications = await Notification.find({ userId, isRead: false });
-      console.log(notifications);
       res.status(200).json(notifications);
     } catch (error) {
       console.error(error);
@@ -18,12 +17,10 @@ module.exports = {
     try {
       const notificationId = req.params.notificationId;
       await Notification.findByIdAndUpdate(notificationId, { isRead: true });
-      res
-        .status(200)
-        .json({
-          message: "Notification marked as read",
-          notificationId: notificationId,
-        });
+      res.status(200).json({
+        message: "Notification marked as read",
+        notificationId: notificationId,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error" });
