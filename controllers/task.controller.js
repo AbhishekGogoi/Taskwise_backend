@@ -173,6 +173,7 @@ exports.addTaskToProject = async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
+    console.log(project);
 
     // Find the workspace containing the project
     const workspace = await Workspace.findOne({ projects: projectId });
@@ -181,7 +182,7 @@ exports.addTaskToProject = async (req, res) => {
         .status(404)
         .json({ message: "Workspace not found for the project" });
     }
-
+    console.log(workspace);
     // If an assignee is provided, check if they are a member of the workspace
     if (assigneeUserID) {
       const isMember = workspace.members.some(
@@ -244,7 +245,7 @@ exports.addTaskToProject = async (req, res) => {
     if (assigneeUserID) {
       const notification = new Notification({
         userId: assigneeUserID.id,
-        message: `You have been assigned a new task: ${taskName}`,
+        message: `The following task has been assigned to you ${taskName} in the project ${project.name} of Worskpace ${workspace.name}`,
         taskId: newTaskId,
         projectId: projectId,
         isRead: false,
