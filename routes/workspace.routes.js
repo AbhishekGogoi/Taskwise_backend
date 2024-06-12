@@ -46,5 +46,8 @@ module.exports = (app) => {
     // Define the route to update member role
     router.patch('/members/role/:adminUserId', memberController.updateMemberRole);
 
+    // Define the route to update member role
+    router.get('/:workspaceId/media-docs', workspaceController.getWorkspaceMediaAndDocs);
+
     app.use("/api/workspaces", router);
 };
