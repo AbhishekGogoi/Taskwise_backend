@@ -284,8 +284,7 @@ exports.getWorkspaceProjects = async (req, res) => {
  *         description: Workspace not found
  *       500:
  *         description: Internal server error
- */
-exports.getWorkspaceTasks = async (req, res) => {
+ */exports.getWorkspaceTasks = async (req, res) => {
     try {
         const { workspaceId } = req.params;
         if (!isValidObjectId(workspaceId)) {
@@ -295,26 +294,37 @@ exports.getWorkspaceTasks = async (req, res) => {
         if (!workspace) {
             return res.status(404).send({ message: "Workspace not found" });
         }
-        
-        // Array to hold all tasks
+
+        // Check if the workspace is active
+        if (!workspace.isActive) {
+            return res.status(400).send({ message: "Workspace is not active" });
+        }
+
+        // Array to hold all active tasks
         let allTasks = [];
         
         // Iterate over each project in the workspace
         workspace.projects.forEach(project => {
-            // Iterate over each task in the project
-            project.tasks.forEach(task => {
-                // Extract relevant task details and add projectName
-                const taskDetails = {
-                    id: task._id,
-                    name: task.taskName,
-                    dueDate: task.dueDate,
-                    priority: task.priority,
-                    status: task.status,
-                    project: project.name // Add projectName from the project
-                };
-                // Push task details to allTasks array
-                allTasks.push(taskDetails);
-            });
+            // Check if the project is active
+            if (project.isActive) {
+                // Iterate over each task in the project
+                project.tasks.forEach(task => {
+                    // Check if the task is active
+                    if (task.isActive) {
+                        // Extract relevant task details and add projectName
+                        const taskDetails = {
+                            id: task._id,
+                            name: task.taskName,
+                            dueDate: task.dueDate,
+                            priority: task.priority,
+                            status: task.status,
+                            project: project.name // Add projectName from the project
+                        };
+                        // Push task details to allTasks array
+                        allTasks.push(taskDetails);
+                    }
+                });
+            }
         });
 
         res.status(200).send(allTasks);
@@ -548,7 +558,8 @@ exports.getAllTasksByUserId = async (req, res) => {
             {
                 $match: {
                     "members.user": new ObjectId(userId),
-                    "members.isActive": true
+                    "members.isActive": true,
+                    isActive: true // Check for active workspace
                 }
             },
             {
@@ -560,10 +571,16 @@ exports.getAllTasksByUserId = async (req, res) => {
                 }
             },
             { $unwind: "$projects" },
+            {
+                $match: {
+                    "projects.isActive": true // Check for active projects
+                }
+            },
             { $unwind: "$projects.tasks" },
             {
                 $match: {
-                    "projects.tasks.assigneeUserID.id": new ObjectId(userId)
+                    "projects.tasks.assigneeUserID.id": new ObjectId(userId),
+                    "projects.tasks.isActive": true // Check for active tasks
                 }
             }
         ];
@@ -581,8 +598,13 @@ exports.getAllTasksByUserId = async (req, res) => {
         aggregatePipeline.push({
             $project: {
                 _id: "$projects.tasks._id",
+                isTaskActive: "$projects.tasks.isActive",
+                projectID: "$projects._id",
+                project: "$projects.name",
+                isProjectActive: "$projects.tasks.isActive",
+                workspace: "$name",
+                isWorkspaceActive: "$isActive",
                 name: "$projects.tasks.taskName",
-                isActive: "$projects.tasks.isActive",
                 content: "$projects.tasks.content",
                 assigneeUserID: "$projects.tasks.assigneeUserID",
                 dueDate: "$projects.tasks.dueDate",
@@ -590,12 +612,10 @@ exports.getAllTasksByUserId = async (req, res) => {
                 attachments: "$projects.tasks.attachments",
                 comments: "$projects.tasks.comments",
                 createdBy: "$projects.tasks.createdBy",
-                workspace: "$name",
-                project: "$projects.name"
             }
         });
 
-        console.log(aggregatePipeline)
+        console.log(aggregatePipeline);
         const tasks = await Workspace.aggregate(aggregatePipeline);
 
         // Respond with the list of tasks
