@@ -328,7 +328,6 @@ exports.createAI = async (req, res) => {
 
         // Process tasks and assign to default columns
         const taskDocs = tasks.map(task => ({
-            ...task,
             taskName: task.title,
             content: task.description,
             createdBy: {
@@ -349,12 +348,13 @@ exports.createAI = async (req, res) => {
         const savedTaskIds = updatedProject.tasks.map(task => task._id);
 
         // Assign task IDs to the "To Do" column
-        defaultColumns[0].taskIds = savedTaskIds;
+        const toDoColumn = updatedProject.columns.find(column => column.title === "To Do");
+        toDoColumn.taskIds.push(...savedTaskIds);
 
         // Update the project with the correct column and task details
         await Project.findByIdAndUpdate(
             savedProject._id,
-            { $set: { columns: defaultColumns } },
+            { $set: { columns: updatedProject.columns } },
             { new: true, useFindAndModify: false }
         );
 
@@ -371,7 +371,8 @@ exports.createAI = async (req, res) => {
             message: error.message || "Some error occurred while creating the project"
         });
     }
-}
+};
+
 
 
 
