@@ -6,7 +6,6 @@ const router = express.Router();
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
-console.log("OpenAI API Key:", process.env.OPENAI_API_KEY);
 
 exports.create = async (req, res) => {
     const prompt = req.body.prompt;
@@ -25,11 +24,12 @@ exports.create = async (req, res) => {
                 },
             ],
             temperature: 1,
-            max_tokens: 256,
+            max_tokens: 512,
             top_p: 1,
             frequency_penalty: 0,
             presence_penalty: 0,
         });
+        //console.log("Full response:", JSON.stringify(response, null, 2));
         res.send(response.choices[0].message.content);
 
     } catch (error) {
