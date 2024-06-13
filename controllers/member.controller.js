@@ -595,7 +595,6 @@ exports.getAllTasksByUserId = async (req, res) => {
             }
         });
 
-        console.log(aggregatePipeline)
         const tasks = await Workspace.aggregate(aggregatePipeline);
 
         // Respond with the list of tasks
