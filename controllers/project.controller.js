@@ -322,6 +322,9 @@ exports.createAI = async (req, res) => {
         });
 
         const savedProject = await project.save();
+        const columnIds = savedProject.columns.map(column => column._id);
+        savedProject.order = columnIds;
+        await savedProject.save();
 
         // Process tasks and assign to default columns
         const taskDocs = tasks.map(task => ({
