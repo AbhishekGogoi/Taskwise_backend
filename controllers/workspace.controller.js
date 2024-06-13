@@ -1,5 +1,6 @@
 const db = require("../models");
 const Workspace = db.workspace;
+const Project = db.project;
 const User = db.user;
 
 /**
@@ -448,6 +449,94 @@ exports.deactivateWorkspace = async (req, res) => {
         res.status(500).send({ message: "Error deactivating workspace" });
     }
 };
+
+/**
+ * @swagger
+ * /api/workspaces/{workspaceId}/media-docs:
+ *   get:
+ *     summary: Get image URLs and document URLs for a workspace
+ *     tags: 
+ *       - Workspace
+ *     description: Retrieve image URLs for the workspace, project images, and task document URLs for the given workspace ID.
+ *     parameters:
+ *       - in: path
+ *         name: workspaceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the workspace to get media and document URLs for
+ *     responses:
+ *       '200':
+ *         description: Successful operation. Returns an array of image and document URLs.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 imgUrls:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Array of image and document URLs
+ *       '404':
+ *         description: Workspace not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Workspace not found
+ *       '500':
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+exports.getWorkspaceMediaAndDocs = async (req, res) => {
+    try {
+        const workspaceId = req.params.workspaceId;
+        // Find workspace by ID
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: 'Workspace not found' });
+        }
+        // Initialize arrays to collect objects with URLs
+        const imgUrls = [];
+        const docUrls = [];
+        // Collect workspace image URL
+        imgUrls.push({ imgKey: workspace.imgKey, imgUrl: workspace.imgUrl });
+        // Find projects in the workspace
+        const projects = await Project.find({ workspaceId });
+        for (const project of projects) {
+            // Collect project image URL
+            imgUrls.push({ imgKey: project.imgKey, imgUrl: project.imgUrl });
+            // Iterate over tasks in each project
+            for (const task of project.tasks) {
+                for (const attachment of task.attachments) {
+                    if (attachment.docType === 'image') {
+                        // Collect image URL
+                        imgUrls.push({ imgKey: attachment.docName, imgUrl: attachment.docUrl });
+                    } else {
+                        // Collect document URL
+                        docUrls.push({ docName: attachment.docName, docUrl: attachment.docUrl });
+                    }
+                }
+            }
+        }
+        res.json({ imgUrls, docUrls });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 
 function isValidObjectId(id) {
     // Check if id is a valid MongoDB ObjectId
