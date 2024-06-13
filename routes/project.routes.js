@@ -41,5 +41,7 @@ module.exports = (app) => {
     // Route to Deactivate a task from a project
     router.put("/projects/:projectId/tasks/:taskId/deactivate", task.deactivateTaskInProject);
 
+    router.post("/projects/createAI",project.createAI)
+
     app.use("/api", router);
 };
