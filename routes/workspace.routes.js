@@ -25,6 +25,9 @@ module.exports = (app) => {
     // Add member of a Workspace
     router.post('/:workspaceId/user/:adminUserId/members', memberController.addMembersToWorkspace);
 
+    // Add member of a Workspace
+    router.patch('/:workspaceId/user/:adminUserId/members', memberController.removeMemberFromWorkspace);
+
     // Get all projects of a Workspace
     router.get("/:workspaceId/projects", memberController.getWorkspaceProjects);
 
