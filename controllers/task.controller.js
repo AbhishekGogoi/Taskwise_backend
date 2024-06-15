@@ -241,7 +241,7 @@ exports.addTaskToProject = async (req, res) => {
     await savedProject.save();
 
     //Create a notification for the assignee
-    if (assigneeUserID) {
+    if (assigneeUserID && assigneeUserID.id !== createdBy._id) {
       const notification = new Notification({
         userId: assigneeUserID.id,
         message: `The following task has been assigned to you <taskName>${taskName}</taskName> in the project <projectName>${project.name}</projectName> of workspace <workspaceName>${workspace.name}</workspaceName>`,
@@ -407,6 +407,9 @@ exports.updateTaskInProject = async (req, res) => {
       return res.status(404).json({ message: "Task not found in the project" });
     }
 
+    // Get the _id field from the existing task
+    const createdById = task.createdBy._id;
+
     // Update the task with the new data
     if (taskName) task.taskName = taskName;
     if (content) task.content = content;
@@ -417,6 +420,18 @@ exports.updateTaskInProject = async (req, res) => {
     if (attachments) task.attachments = attachments;
     // Save the project with the updated task
     await project.save();
+
+    //Create a notification for the assignee
+    if (assigneeUserID && assigneeUserID.id !== createdById.toString()) {
+      const notification = new Notification({
+        userId: assigneeUserID.id,
+        message: `The following task has been assigned to you <taskName>${task.taskName}</taskName> in the project <projectName>${project.name}</projectName>.`,
+        taskId: taskId,
+        projectId: projectId,
+        isRead: false,
+      });
+      await notification.save();
+    }
 
     res.status(200).json(project);
   } catch (error) {
