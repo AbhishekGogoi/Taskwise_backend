@@ -170,11 +170,15 @@ module.exports = {
    */
 
   loginUser: async (req, res) => {
-    //1.check user using email
-    //2.compare password
-    //3.create jwt token
-    //4.send response to client
-    const { email, password } = req.body;
+    const GUEST_EMAIL = process.env.GUEST_EMAIL;
+    const GUEST_PASSWORD = process.env.GUEST_PASSWORD;
+
+    let { email, password } = req.body;
+
+    if (email === "guest" && password === "guest") {
+      email = GUEST_EMAIL;
+      password = GUEST_PASSWORD;
+    }
 
     try {
       const user = await UserModel.findOne({ email });
