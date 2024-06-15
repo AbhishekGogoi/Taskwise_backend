@@ -4,7 +4,7 @@ const OpenAI = require("openai");
 const router = express.Router();
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY,   
   });
 
 exports.create = async (req, res) => {
@@ -24,14 +24,15 @@ exports.create = async (req, res) => {
                 },
             ],
             temperature: 1,
-            max_tokens: 512,
+            max_tokens:  2048,
             top_p: 1,
             frequency_penalty: 0,
             presence_penalty: 0,
         });
-        //console.log("Full response:", JSON.stringify(response, null, 2));
-        res.send(response.choices[0].message.content);
-
+        console.log("Full response:",response.choices[0].message.content);
+        //res.send(response.choices[0].message.content);
+        const jsonResponse = JSON.parse(response.choices[0].message.content);
+        res.send(jsonResponse)
     } catch (error) {
         console.error(
             "Error from OpenAI API:",
