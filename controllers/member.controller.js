@@ -93,9 +93,17 @@ exports.addMembersToWorkspace = async (req, res) => {
             }
 
             // Check if the member is already in the workspace
-            const existingMember = workspace.members.find(member => member.user.toString() === user._id.toString());
+            let existingMember = workspace.members.find(member => member.user.toString() === user._id.toString());
             if (existingMember) {
-                membersStatus.push({ email: memberEmail, status: 'Member already in workspace' });
+                // If member exists and is inactive, activate them
+                if (!existingMember.isActive) {
+                    existingMember.isActive = true;
+                    existingMember.joinedAt = new Date();
+                    existingMember.deactivatedAt = null;
+                    membersStatus.push({ email: memberEmail, status: 'Member activated and added to workspace' });
+                } else {
+                    membersStatus.push({ email: memberEmail, status: 'Member already in workspace' });
+                }
                 continue; // Continue with the next iteration
             }
 
@@ -119,6 +127,126 @@ exports.addMembersToWorkspace = async (req, res) => {
         console.error("Error adding members to workspace:", err);
         // Send a generic error message to the client
         res.status(500).send({ message: "Error adding members to workspace" });
+    }
+};
+
+/**
+ * @swagger
+ * /api/workspaces/{workspaceId}/user/{adminUserId}/members:
+ *   delete:
+ *     tags:
+ *       - Member
+ *     summary: Remove members from a workspace
+ *     description: Remove members from a workspace.
+ *     parameters:
+ *       - name: workspaceId
+ *         in: path
+ *         description: ID of the workspace to remove members from
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: adminUserId
+ *         in: path
+ *         description: ID of the admin user performing the action
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               memberEmails:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Emails of the members to remove from the workspace
+ *     responses:
+ *       200:
+ *         description: Successfully removed members from the workspace
+ *         schema:
+ *           $ref: "#/definitions/Workspace"
+ *       400:
+ *         description: Invalid workspace ID or member Email
+ *       404:
+ *         description: Workspace not found, User not found, or Member not found in workspace
+ *       500:
+ *         description: Error removing members from workspace
+ */
+exports.removeMemberFromWorkspace = async (req, res) => {
+    try {
+        const { workspaceId, adminUserId } = req.params;
+        const { memberEmails } = req.body;
+
+        // Check if workspaceId is a valid ObjectId
+        if (!isValidObjectId(workspaceId)) {
+            return res.status(400).send({ message: "Invalid workspace ID" });
+        }
+
+        // Check if adminUserId is a valid ObjectId
+        if (!isValidObjectId(adminUserId)) {
+            return res.status(400).send({ message: "Invalid admin user ID" });
+        }
+
+        // Find the workspace by its ID
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).send({ message: "Workspace not found" });
+        }
+
+        // Find the admin user by its ID
+        const adminUser = await User.findById(adminUserId);
+        if (!adminUser) {
+            return res.status(404).send({ message: "Admin user not found" });
+        }
+
+        // Check if the authenticated user is an admin of the workspace
+        const isAdmin = workspace.members.some(m => m.user.toString() === adminUserId && m.role === 'Admin');
+        if (!isAdmin) {
+            return res.status(403).json({ message: "You are not authorized to perform this action" });
+        }
+
+        const membersStatus = [];
+
+        // Loop through each member email and set isActive to false
+        for (const memberEmail of memberEmails) {
+            // Find the user by Email
+            const user = await User.findOne({ email: memberEmail });
+            if (!user) {
+                membersStatus.push({ email: memberEmail, status: 'User not found' });
+                continue; // Continue with the next iteration
+            }
+
+            // Check if the member is the admin user trying to remove themselves
+            if (user._id.toString() === adminUserId) {
+                membersStatus.push({ email: memberEmail, status: 'Admin user cannot remove themselves' });
+                continue; // Continue with the next iteration
+            }
+
+            // Check if the member is in the workspace
+            const member = workspace.members.find(m => m.user.toString() === user._id.toString());
+            if (!member) {
+                membersStatus.push({ email: memberEmail, status: 'Member not found in workspace' });
+                continue; // Continue with the next iteration
+            }
+
+            // Update isActive status to false
+            member.isActive = false;
+            member.deactivatedAt = new Date();
+            membersStatus.push({ email: memberEmail, status: 'Deactivated successfully' });
+        }
+
+        // Update the workspace and send the updated workspace object along with members status in the response
+        workspace.updatedAt = new Date();
+        const updatedWorkspace = await workspace.save();
+        res.status(200).send({ workspace: updatedWorkspace, membersStatus });
+    } catch (err) {
+        // Log the error
+        console.error("Error removing members from workspace:", err);
+        // Send a generic error message to the client
+        res.status(500).send({ message: "Error removing members from workspace" });
     }
 };
 
@@ -322,10 +450,8 @@ exports.getWorkspaceProjects = async (req, res) => {
                             isWorkspaceActive: workspace.isActive,
                             name: task.taskName,
                             assigneeUserID: task.assigneeUserID,
-                            dueDate: task.dueDate,
-                            priority: task.priority,
-                            attachments: task.attachments,
                             comments: task.comments,
+                            attachments: task.attachments,
                             createdBy: task.createdBy,
                         };
                         // Push task details to allTasks array
@@ -605,7 +731,8 @@ exports.getAllTasksByUserId = async (req, res) => {
         // Continue with the project stage
         aggregatePipeline.push({
             $project: {
-                _id: "$projects.tasks._id",
+                _id: 0,
+                id: "$projects.tasks._id",
                 isTaskActive: "$projects.tasks.isActive",
                 projectID: "$projects._id",
                 project: "$projects.name",
