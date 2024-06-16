@@ -441,17 +441,21 @@ exports.getWorkspaceProjects = async (req, res) => {
                     if (task.isActive) {
                         // Extract relevant task details and add projectName
                         const taskDetails = {
-                            _id: task._id,
+                            _id: 0,
+                            id: task._id,
                             isTaskActive: task.isActive,
                             projectID: project._id,
                             project: project.name,
-                            isProjectActive: project.isActive,
+                            isProjectActive: task.isActive,
                             workspace: workspace.name,
                             isWorkspaceActive: workspace.isActive,
                             name: task.taskName,
+                            content: task.content,
                             assigneeUserID: task.assigneeUserID,
-                            comments: task.comments,
+                            dueDate: task.dueDate,
+                            priority: task.priority,
                             attachments: task.attachments,
+                            comments: task.comments,
                             createdBy: task.createdBy,
                         };
                         // Push task details to allTasks array
