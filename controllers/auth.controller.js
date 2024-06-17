@@ -203,7 +203,7 @@ module.exports = {
       //set the cookie
       res.cookie("access_token", jwtToken, {
         httpOnly: true, // Make the cookie HTTP only, so it's not accessible via JavaScript
-        secure: false,
+        secure: process.env.NODE_ENV === "production", // Set secure to true in production when using HTTPS
         maxAge: 3600000, // 1 hour
       });
 
