@@ -242,14 +242,8 @@ module.exports = {
 
   signOutUser: (req, res) => {
     try {
-      req.logout((err) => {
-        if (err) {
-          console.error(err);
-          return res
-            .status(500)
-            .send({ message: "An error occurred during signout." });
-        }
-
+      // Destroy the session if it exists
+      if (req.session) {
         req.session.destroy((err) => {
           if (err) {
             console.error(err);
@@ -257,12 +251,14 @@ module.exports = {
               message: "An error occurred while destroying the session.",
             });
           }
-
-          res.clearCookie("connect.sid"); // Clear the session cookie (typically 'connect.sid')
-          res.clearCookie("access_token"); // Clear the JWT token cookie
-          return res.status(200).send({ message: "You've been signed out!" });
         });
-      });
+      }
+
+      // Clear cookies
+      res.clearCookie("connect.sid"); // Clear the session cookie (if using connect.sid)
+      res.clearCookie("access_token"); // Clear the JWT token cookie
+
+      return res.status(200).send({ message: "You've been signed out!" });
     } catch (err) {
       console.error(err);
       return res

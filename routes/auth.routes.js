@@ -22,7 +22,7 @@ module.exports = (app) => {
   router.post("/auth/login", loginUser);
 
   // Logout a user
-  router.post("/auth/logout", signOutUser);
+  router.post("/auth/logout", signOutUser, ensureAuthenticated);
 
   // Route to handle forgot password (send reset code)
   router.post("/auth/forgotpassword", forgotPassword);
@@ -40,7 +40,7 @@ module.exports = (app) => {
   router.post("/auth/changepassword", changePassword, ensureAuthenticated);
 
   // Route to handle updating the profile
-  router.put("/auth/updateprofile", updateProfile);
+  router.put("/auth/updateprofile", updateProfile, ensureAuthenticated);
 
   app.use("/api", router);
 };
