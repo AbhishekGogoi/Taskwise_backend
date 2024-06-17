@@ -271,61 +271,6 @@ module.exports = {
     }
   },
 
-  googleOAuthSignup: async (req, res, next) => {
-    try {
-      const profile = req.profile;
-      const email = profile.emails[0].value;
-      const name = profile.displayName;
-
-      let user = await UserModel.findOne({ email: email });
-
-      if (user) {
-        // User already exists, generate JWT token and send response
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-        const { password, ...userData } = user.toObject();
-        const expiryDate = new Date(Date.now() + 3600000); // 1 hour
-        if (res && res.cookie) {
-          res.cookie("access_token", token, {
-            httpOnly: true,
-            expires: expiryDate,
-          });
-        }
-        if (res) res.status(200).json(userData);
-        else next(null, { ...userData, _id: user._id });
-      } else {
-        // User doesn't exist, generate random password, create user, generate JWT token, and send response
-        let username = name
-          ? name.split(" ").join("").toLowerCase() +
-            Math.random().toString(36).slice(-8)
-          : "defaultUsername" + Math.random().toString(36).slice(-8);
-        console.log(username, "username");
-        const generatedPassword =
-          Math.random().toString(36).slice(-8) +
-          Math.random().toString(36).slice(-8);
-        const hashedPassword = bcrypt.hashSync(generatedPassword, 10);
-        const newUser = new UserModel({
-          username: username,
-          email: email,
-          password: hashedPassword,
-        });
-        await newUser.save();
-        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
-        const { password, ...userData } = newUser.toObject();
-        const expiryDate = new Date(Date.now() + 3600000); // 1 hour
-        if (res && res.cookie) {
-          res.cookie("access_token", token, {
-            httpOnly: true,
-            expires: expiryDate,
-          });
-        }
-        if (res) res.status(200).json(userData);
-        else next(null, { ...userData, _id: newUser._id });
-      }
-    } catch (error) {
-      next(error);
-    }
-  },
-
   /**
    * @swagger
    * /api/auth/forgotpassword:
