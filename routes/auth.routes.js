@@ -22,7 +22,7 @@ module.exports = (app) => {
   router.post("/auth/login", loginUser);
 
   // Logout a user
-  router.post("/auth/logout", signOutUser, ensureAuthenticated);
+  router.post("/auth/logout", signOutUser);
 
   // Route to handle forgot password (send reset code)
   router.post("/auth/forgotpassword", forgotPassword);
