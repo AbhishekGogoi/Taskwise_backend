@@ -170,11 +170,15 @@ module.exports = {
    */
 
   loginUser: async (req, res) => {
-    //1.check user using email
-    //2.compare password
-    //3.create jwt token
-    //4.send response to client
-    const { email, password } = req.body;
+    const GUEST_EMAIL = process.env.GUEST_EMAIL;
+    const GUEST_PASSWORD = process.env.GUEST_PASSWORD;
+
+    let { email, password } = req.body;
+
+    if (email === "guest" && password === "guest") {
+      email = GUEST_EMAIL;
+      password = GUEST_PASSWORD;
+    }
 
     try {
       const user = await UserModel.findOne({ email });
@@ -199,7 +203,7 @@ module.exports = {
       //set the cookie
       res.cookie("access_token", jwtToken, {
         httpOnly: true, // Make the cookie HTTP only, so it's not accessible via JavaScript
-        secure: false,
+        secure: process.env.NODE_ENV === "production", // Set secure to true in production when using HTTPS
         maxAge: 3600000, // 1 hour
       });
 
@@ -238,87 +242,15 @@ module.exports = {
 
   signOutUser: (req, res) => {
     try {
-      req.logout((err) => {
-        if (err) {
-          console.error(err);
-          return res
-            .status(500)
-            .send({ message: "An error occurred during signout." });
-        }
+      // Clear the JWT cookie
+      res.clearCookie("access_token");
 
-        req.session.destroy((err) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).send({
-              message: "An error occurred while destroying the session.",
-            });
-          }
-
-          res.clearCookie("connect.sid"); // Clear the session cookie (typically 'connect.sid')
-          res.clearCookie("access_token"); // Clear the JWT token cookie
-          return res.status(200).send({ message: "You've been signed out!" });
-        });
-      });
+      return res.status(200).send({ message: "You've been signed out!" });
     } catch (err) {
       console.error(err);
       return res
         .status(500)
         .send({ message: "An error occurred during signout." });
-    }
-  },
-
-  googleOAuthSignup: async (req, res, next) => {
-    try {
-      const profile = req.profile;
-      const email = profile.emails[0].value;
-      const name = profile.displayName;
-
-      let user = await UserModel.findOne({ email: email });
-
-      if (user) {
-        // User already exists, generate JWT token and send response
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-        const { password, ...userData } = user.toObject();
-        const expiryDate = new Date(Date.now() + 3600000); // 1 hour
-        if (res && res.cookie) {
-          res.cookie("access_token", token, {
-            httpOnly: true,
-            expires: expiryDate,
-          });
-        }
-        if (res) res.status(200).json(userData);
-        else next(null, { ...userData, _id: user._id });
-      } else {
-        // User doesn't exist, generate random password, create user, generate JWT token, and send response
-        let username = name
-          ? name.split(" ").join("").toLowerCase() +
-            Math.random().toString(36).slice(-8)
-          : "defaultUsername" + Math.random().toString(36).slice(-8);
-        console.log(username, "username");
-        const generatedPassword =
-          Math.random().toString(36).slice(-8) +
-          Math.random().toString(36).slice(-8);
-        const hashedPassword = bcrypt.hashSync(generatedPassword, 10);
-        const newUser = new UserModel({
-          username: username,
-          email: email,
-          password: hashedPassword,
-        });
-        await newUser.save();
-        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
-        const { password, ...userData } = newUser.toObject();
-        const expiryDate = new Date(Date.now() + 3600000); // 1 hour
-        if (res && res.cookie) {
-          res.cookie("access_token", token, {
-            httpOnly: true,
-            expires: expiryDate,
-          });
-        }
-        if (res) res.status(200).json(userData);
-        else next(null, { ...userData, _id: newUser._id });
-      }
-    } catch (error) {
-      next(error);
     }
   },
 
@@ -712,7 +644,17 @@ module.exports = {
       user.title = title;
       await user.save();
 
-      res.status(200).json({ message: "Profile updated successfully", user });
+      const tokenObject = {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        title: user.title,
+        imgUrl: user.imgUrl,
+      };
+
+      res
+        .status(200)
+        .json({ message: "Profile updated successfully", user: tokenObject });
     } catch (error) {
       res.status(500).json({ message: "Server error", error });
     }
