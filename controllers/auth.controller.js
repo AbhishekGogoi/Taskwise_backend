@@ -644,7 +644,17 @@ module.exports = {
       user.title = title;
       await user.save();
 
-      res.status(200).json({ message: "Profile updated successfully", user });
+      const tokenObject = {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        title: user.title,
+        imgUrl: user.imgUrl,
+      };
+
+      res
+        .status(200)
+        .json({ message: "Profile updated successfully", user: tokenObject });
     } catch (error) {
       res.status(500).json({ message: "Server error", error });
     }
