@@ -2,8 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const session = require("express-session");
-const passport = require("./utils/passport");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const cron = require("node-cron");
@@ -27,23 +25,6 @@ app.use(cors(corsOptions));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-// use of cookieParser
-app.use(cookieParser());
-
-// use of express-session
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }, // Set secure to true in production when using HTTPS
-  })
-);
-
-// use of Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
 
 if (
   !process.env.AWS_ACCESS_KEY_ID ||
@@ -74,6 +55,7 @@ require("./routes/workspace.routes")(app);
 require("./routes/auth.routes")(app);
 require("./routes/ai.routes")(app);
 require("./routes/notification.routes")(app);
+require("./routes/common.routes")(app);
 
 // Schedule the updateImageUrls function to run at midnight every day
 cron.schedule(
