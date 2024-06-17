@@ -55,6 +55,7 @@ require("./routes/workspace.routes")(app);
 require("./routes/auth.routes")(app);
 require("./routes/ai.routes")(app);
 require("./routes/notification.routes")(app);
+require("./routes/common.routes")(app);
 
 // Schedule the updateImageUrls function to run at midnight every day
 cron.schedule(

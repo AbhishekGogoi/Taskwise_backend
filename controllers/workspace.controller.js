@@ -510,13 +510,9 @@ exports.getWorkspaceMediaAndDocs = async (req, res) => {
         // Initialize arrays to collect objects with URLs
         const imgUrls = [];
         const docUrls = [];
-        // Collect workspace image URL
-        imgUrls.push({ imgKey: workspace.imgKey, imgUrl: workspace.imgUrl });
         // Find projects in the workspace
         const projects = await Project.find({ workspaceId });
         for (const project of projects) {
-            // Collect project image URL
-            imgUrls.push({ imgKey: project.imgKey, imgUrl: project.imgUrl });
             // Iterate over tasks in each project
             for (const task of project.tasks) {
                 for (const attachment of task.attachments) {
