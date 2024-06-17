@@ -1,7 +1,4 @@
 module.exports = (app) => {
-  const passport = require("../utils/passport");
-  // const passport = require("passport");
-
   const {
     registerUser,
     loginUser,
@@ -27,21 +24,6 @@ module.exports = (app) => {
   // Logout a user
   router.post("/auth/logout", signOutUser);
 
-  //Google OAuth routes
-  router.get(
-    "/auth/google",
-    passport.authenticate("google", { scope: ["profile", "email"] })
-  );
-
-  router.get(
-    "/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/" }),
-    (req, res) => {
-      // Successful authentication, redirect to client
-      res.redirect("http://localhost:3000/projects"); // Adjust the URL as needed
-    }
-  );
-
   // Route to handle forgot password (send reset code)
   router.post("/auth/forgotpassword", forgotPassword);
 
@@ -58,7 +40,7 @@ module.exports = (app) => {
   router.post("/auth/changepassword", changePassword, ensureAuthenticated);
 
   // Route to handle updating the profile
-  router.put("/auth/updateprofile", updateProfile);
+  router.put("/auth/updateprofile", updateProfile, ensureAuthenticated);
 
   app.use("/api", router);
 };
