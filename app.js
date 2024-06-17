@@ -13,6 +13,9 @@ const { updateImageUrls } = require("./services/updateImageUrlsJob");
 
 const app = express();
 
+// use of cookieParser
+app.use(cookieParser());
+
 // app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 const corsOptions = {
   origin: "https://devtaskwisefrontend.netlify.app", // Replace with your Netlify domain
@@ -21,6 +24,7 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 app.use(cors(corsOptions));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
