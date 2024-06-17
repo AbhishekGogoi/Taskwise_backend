@@ -3,5 +3,5 @@ module.exports = (app) => {
 
     var router = require("express").Router();
 
-    app.use("/api/get-existing-data", commonController.checkAvailabiltyOfData);
+    app.use("/api/get-existing-data", commonController.checkAvailabilityOfData);
 };

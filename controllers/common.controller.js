@@ -71,7 +71,7 @@ const getModel = (collectionName) => {
  *                   type: string
  *                   example: "An error occurred while fetching records"
  */
-exports.checkAvailabiltyOfData = async (req, res) => {
+exports.checkAvailabilityOfData = async (req, res) => {
     const { collection, key } = req.query;
 
     if (!collection || !key) {
@@ -85,12 +85,15 @@ exports.checkAvailabiltyOfData = async (req, res) => {
             return res.status(404).json({ error: 'Collection not found' });
         }
 
-        // Projection to only return the key values
-        const records = await Model.find({}, { [key]: 1, _id: 0 });
+        // Check if the collection has an isActive field
+        const schemaPaths = Model.schema.paths;
+        const isActiveFieldExists = !!schemaPaths['isActive'];
 
-        if (!records.length) {
-            return res.status(404).json({ error: 'No records found' });
-        }
+        // Query based on the presence of isActive field
+        const query = isActiveFieldExists ? { isActive: true } : {};
+        const projection = { [key]: 1, _id: 0 };
+
+        const records = await Model.find(query, projection);
 
         const keyValues = records.map(record => record[key]);
         
@@ -100,3 +103,4 @@ exports.checkAvailabiltyOfData = async (req, res) => {
         return res.status(500).json({ error: 'An error occurred while fetching records' });
     }
 };
+
