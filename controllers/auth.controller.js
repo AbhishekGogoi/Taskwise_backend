@@ -198,18 +198,17 @@ module.exports = {
       };
       const jwtToken = jwt.sign(tokenObject, process.env.JWT_SECRET, {
         expiresIn: "1h",
-      }); //1 hour
+      }); // 1 hour
 
-      //set the cookie
-      res.cookie("access_token", jwtToken, {
-        httpOnly: true, // Make the cookie HTTP only, so it's not accessible via JavaScript
-        secure: process.env.NODE_ENV === "production", // Set secure to true in production when using HTTPS
-        maxAge: 3600000, // 1 hour
+      return res.status(200).json({
+        token: jwtToken,
+        user: tokenObject,
+        message: "Logged in successfully",
       });
-
-      return res.status(200).json({ jwtToken: jwtToken, user: tokenObject });
     } catch (err) {
-      return res.status(500).json({ message: "error", error: err });
+      return res
+        .status(500)
+        .json({ message: "Internal server error", error: err });
     }
   },
 
@@ -242,8 +241,8 @@ module.exports = {
 
   signOutUser: (req, res) => {
     try {
-      // Clear the JWT cookie
-      res.clearCookie("access_token");
+      // As we are not using cookies anymore, there's nothing to clear server-side for sign out.
+      // The client should handle the removal of the token from localStorage/sessionStorage.
 
       return res.status(200).send({ message: "You've been signed out!" });
     } catch (err) {
