@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const cron = require("node-cron");
@@ -11,8 +11,14 @@ const { updateImageUrls } = require("./services/updateImageUrlsJob");
 
 const app = express();
 
-// use of cookieParser
-app.use(cookieParser());
+//cookie session
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ["taskwise"],
+    maxAge: 24 * 60 * 60 * 100,
+  })
+);
 
 // app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 const corsOptions = {
